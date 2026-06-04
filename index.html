@@ -593,24 +593,123 @@ function renderDash(){
 function kpi(cls,ico,lbl,val,sub){return `<div class="kpi ${cls}"><div class="bar-top"></div><div class="ico">${ico}</div>
   <div class="lbl">${lbl}</div><div class="val">${val}</div><div class="sub">${sub}</div></div>`;}
 
+let _lancFiltro='todos';
+function lancFiltro(f){
+  _lancFiltro=f;
+  ['lf_todos','lf_despesa','lf_receita','lf_pendente','lf_pago'].forEach(id=>$(id)&&$(id).classList.remove('on'));
+  const map={todos:'lf_todos',despesa:'lf_despesa',receita:'lf_receita',pendente:'lf_pendente',pago:'lf_pago'};
+  if($(map[f]))$(map[f]).classList.add('on');
+  renderLanc();
+}
 function renderLanc(){
-  const lm=lancMes().sort((a,b)=>(a.status>b.status?1:-1));
+  let lm=lancMes().sort((a,b)=>(a.status>b.status?1:-1));
+  const busca=($('lancSearch')||{value:''}).value.toLowerCase().trim();
+  if(busca) lm=lm.filter(l=>l.descricao.toLowerCase().includes(busca)||l.categoria.toLowerCase().includes(busca));
+  if(_lancFiltro==='despesa') lm=lm.filter(l=>l.tipo==='despesa');
+  else if(_lancFiltro==='receita') lm=lm.filter(l=>l.tipo==='receita');
+  else if(_lancFiltro==='pendente') lm=lm.filter(l=>l.status==='pendente');
+  else if(_lancFiltro==='pago') lm=lm.filter(l=>l.status==='pago'||l.status==='recebido');
+
+  const totRec=lm.filter(l=>l.tipo==='receita').reduce((s,l)=>s+ +l.valor,0);
+  const totDesp=lm.filter(l=>l.tipo==='despesa').reduce((s,l)=>s+ +l.valor,0);
+  const totPend=lm.filter(l=>l.status==='pendente').reduce((s,l)=>s+ +l.valor,0);
+  if($('lancKpis')) $('lancKpis').innerHTML=`
+    ${kpi('green','💰','Receitas',brl(totRec),lm.filter(l=>l.tipo==='receita').length+' lançamentos')}
+    ${kpi('red','💸','Despesas',brl(totDesp),lm.filter(l=>l.tipo==='despesa').length+' lançamentos')}
+    ${kpi('yellow','⏳','Pendente pagar',brl(totPend),lm.filter(l=>l.status==='pendente').length+' itens')}
+    ${kpi(totRec-totDesp>=0?'green':'red','⚖️','Saldo do mês',brl(totRec-totDesp),'receitas − despesas')}`;
+
   let h=`<thead><tr><th>Descrição</th><th>Categoria</th><th>Cartão</th><th>Tipo</th><th>Status</th><th class="num">Valor</th><th></th></tr></thead><tbody>`;
-  if(!lm.length) h+=`<tr><td colspan="7"><div class="empty"><div class="e">📭</div>Nenhum lançamento neste mês.<br><br><button class="btn" onclick="openLanc()">＋ Adicionar primeiro</button></div></td></tr>`;
+  if(!lm.length) h+=`<tr><td colspan="7"><div class="empty"><div class="e">📭</div>Nenhum lançamento encontrado.<br><br><button class="btn" onclick="openLanc()">＋ Adicionar</button></div></td></tr>`;
   lm.forEach(l=>{
     const c=cartaoById(l.cartao_id);
+    const isRec=l.tipo==='receita';
     h+=`<tr>
       <td><b>${l.descricao}</b>${l.recorrente?'<span class="rec">↻ fixo</span>':''}${l.parcela_total>1?`<span class="rec">${l.parcela_atual}/${l.parcela_total}</span>`:''}${l.observacao?`<div style="font-size:12px;color:var(--mut2)">${l.observacao}</div>`:''}</td>
       <td><span class="tag cat">${l.categoria}</span></td>
       <td>${c?`<span class="chip-cartao"><span class="d" style="background:${c.cor}"></span>${c.nome}</span>`:'<span style="color:var(--mut2)">—</span>'}</td>
-      <td>${l.tipo==='receita'?'<span style="color:var(--green)">⬆ Receita</span>':'<span style="color:var(--red)">⬇ Despesa</span>'}</td>
-      <td><button class="tag badge ${l.status}" onclick="toggleLanc('${l.id}','${l.status}')">${l.status==='pago'?'✓ pago':'● pendente'}</button></td>
-      <td class="num" style="color:${l.tipo==='receita'?'var(--green)':'var(--txt)'}">${brl(+l.valor)}</td>
+      <td>${isRec?'<span style="color:var(--green)">⬆ Receita</span>':'<span style="color:var(--red)">⬇ Despesa</span>'}</td>
+      <td><button class="tag badge ${l.status}" onclick="toggleLanc('${l.id}','${l.status}')">${l.status==='pago'?'✓ pago':l.status==='recebido'?'✓ recebido':'● pendente'}</button></td>
+      <td class="num" style="color:${isRec?'var(--green)':'var(--txt)'};font-size:15px">${brl(+l.valor)}</td>
       <td style="text-align:right;white-space:nowrap"><button class="ico-btn" onclick='openLanc(${JSON.stringify(l)})'>✏️</button><button class="ico-btn del" onclick="delRow('fin_lancamentos','${l.id}')">🗑️</button></td>
     </tr>`;
   });
   h+='</tbody>';
   $('lancTable').innerHTML=h;
+}
+
+function renderSugestoes(){
+  const base=new Date(); base.setDate(1);
+  const comp=compStr(base);
+  const todos=state.lancamentos;
+  const lm=todos.filter(l=>l.competencia===comp);
+  const receitas=lm.filter(l=>l.tipo==='receita').reduce((s,l)=>s+ +l.valor,0);
+  const despesas=lm.filter(l=>l.tipo==='despesa').reduce((s,l)=>s+ +l.valor,0);
+  const pendentes=lm.filter(l=>l.status==='pendente'&&l.tipo==='despesa').reduce((s,l)=>s+ +l.valor,0);
+  const saldo=receitas-despesas;
+  const pctComprometido=receitas>0?despesas/receitas*100:100;
+
+  // agrupa por categoria
+  const porCat={};
+  lm.filter(l=>l.tipo==='despesa').forEach(l=>{porCat[l.categoria]=(porCat[l.categoria]||0)+ +l.valor;});
+  const catSort=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
+  const maiorCat=catSort[0];
+
+  const sugs=[];
+
+  if(pctComprometido>90)
+    sugs.push({cor:'var(--red)',ico:'🚨',titulo:'Gastos acima do limite',texto:`Você está comprometendo <b>${pctComprometido.toFixed(0)}%</b> da sua renda este mês. O ideal é manter abaixo de 80%. Revise despesas não essenciais.`});
+  else if(pctComprometido>70)
+    sugs.push({cor:'var(--yellow)',ico:'⚠️',titulo:'Atenção com os gastos',texto:`<b>${pctComprometido.toFixed(0)}%</b> da sua renda já está comprometida. Você ainda está no controle, mas fique atento.`});
+  else
+    sugs.push({cor:'var(--green)',ico:'✅',titulo:'Gastos sob controle',texto:`Ótimo! Você está comprometendo apenas <b>${pctComprometido.toFixed(0)}%</b> da sua renda. Continue assim!`});
+
+  if(saldo<0)
+    sugs.push({cor:'var(--red)',ico:'📉',titulo:'Saldo negativo este mês',texto:`Suas despesas superam suas receitas em <b>${brl(Math.abs(saldo))}</b>. Tente identificar cortes possíveis ou adicione uma fonte de renda extra.`});
+  else if(saldo>0)
+    sugs.push({cor:'var(--green)',ico:'💰',titulo:'Você tem saldo positivo',texto:`Parabéns! Sobram <b>${brl(saldo)}</b> este mês. Considere guardar ou investir esse valor.`});
+
+  if(pendentes>0)
+    sugs.push({cor:'var(--yellow)',ico:'⏳',titulo:'Contas pendentes',texto:`Você ainda tem <b>${brl(pendentes)}</b> em despesas pendentes este mês. Não deixe acumular para evitar juros ou atrasos.`});
+
+  if(maiorCat)
+    sugs.push({cor:'var(--blue)',ico:'📊',titulo:`Maior gasto: ${maiorCat[0]}`,texto:`A categoria <b>${maiorCat[0]}</b> representa <b>${brl(maiorCat[1])}</b> das suas despesas este mês${receitas>0?' ('+Math.round(maiorCat[1]/receitas*100)+'% da renda)':''}.`});
+
+  if(receitas>0 && saldo/receitas>=0.2)
+    sugs.push({cor:'var(--acc)',ico:'🏦',titulo:'Hora de investir',texto:`Você tem <b>${Math.round(saldo/receitas*100)}%</b> de sobra. Que tal reservar pelo menos 10% da renda para uma reserva de emergência ou investimento?`});
+
+  const recorrentes=todos.filter(l=>l.recorrente&&l.tipo==='despesa');
+  if(recorrentes.length>0){
+    const totRec=recorrentes.reduce((s,l)=>s+ +l.valor,0);
+    sugs.push({cor:'var(--mut)',ico:'🔁',titulo:'Gastos fixos recorrentes',texto:`Você tem <b>${recorrentes.length} despesas fixas</b> totalizando <b>${brl(totRec)}</b>/mês. Revise periodicamente se todos ainda fazem sentido.`});
+  }
+
+  // regra 50/30/20
+  const necessidades=lm.filter(l=>l.tipo==='despesa'&&['Moradia','Saúde','Alimentação','Transporte','Dízimo'].includes(l.categoria)).reduce((s,l)=>s+ +l.valor,0);
+  const pctNec=receitas>0?necessidades/receitas*100:0;
+  if(pctNec>50)
+    sugs.push({cor:'var(--yellow)',ico:'📐',titulo:'Regra 50/30/20',texto:`Suas necessidades básicas consomem <b>${pctNec.toFixed(0)}%</b> da renda (ideal: 50%). Avalie se há como reduzir gastos essenciais.`});
+  else if(receitas>0)
+    sugs.push({cor:'var(--green)',ico:'📐',titulo:'Regra 50/30/20',texto:`Suas necessidades básicas consomem <b>${pctNec.toFixed(0)}%</b> da renda — dentro do recomendado (até 50%). Bom equilíbrio!`});
+
+  const html=`
+    <div class="kpis" style="margin-bottom:20px">
+      ${kpi('green','💰','Receitas do mês',brl(receitas),'')}
+      ${kpi('red','💸','Despesas do mês',brl(despesas),'')}
+      ${kpi(saldo>=0?'green':'red','⚖️','Saldo',brl(saldo),'')}
+      ${kpi('blue','📊','Comprometido',pctComprometido.toFixed(0)+'%','da renda')}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      ${sugs.map(s=>`
+        <div style="background:var(--card);border:1px solid var(--line);border-left:4px solid ${s.cor};border-radius:14px;padding:18px 20px;display:flex;gap:16px;align-items:flex-start;box-shadow:var(--shadow)">
+          <div style="font-size:28px;flex-shrink:0">${s.ico}</div>
+          <div>
+            <div style="font-size:15px;font-weight:800;margin-bottom:6px">${s.titulo}</div>
+            <div style="font-size:14px;color:var(--mut);line-height:1.6">${s.texto}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  $('sugestoesContent').innerHTML=html;
 }
 
 function renderCartoes(){
