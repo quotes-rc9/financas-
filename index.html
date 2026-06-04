@@ -131,14 +131,32 @@
   .hero .hrow{display:flex;gap:22px;margin-top:14px;flex-wrap:wrap}
   .hero .hrow .it .l{font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px}
   .hero .hrow .it .v{font-size:19px;font-weight:800;margin-top:2px}
-  .cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-  .cal{background:linear-gradient(155deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow);position:relative;transition:.15s}
-  .cal:hover{border-color:var(--acc);transform:translateY(-2px)}
+  .cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+  .proj-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+  .proj-filters span{font-size:13px;color:var(--mut);font-weight:600}
+  .fbtn{background:var(--card2);border:1px solid var(--line);color:var(--mut);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit}
+  .fbtn:hover,.fbtn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  .proj-chart{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .proj-chart h4{font-size:13px;color:var(--mut);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+  .proj-bars{display:flex;align-items:flex-end;gap:6px;height:90px}
+  .proj-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+  .proj-bar-col .pb{width:100%;border-radius:4px 4px 0 0;transition:opacity .2s}
+  .proj-bar-col:hover .pb{opacity:.75}
+  .proj-bar-col .pl{font-size:9px;color:var(--mut2);white-space:nowrap;text-align:center}
+  .cal{background:linear-gradient(155deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow);position:relative;transition:.2s;cursor:pointer}
+  .cal:hover{border-color:var(--acc);transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.4)}
   .cal.now{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc),var(--shadow)}
+  .cal.deficit{border-left:3px solid var(--red)}
+  .cal.superavit{border-left:3px solid var(--green)}
   .cal .mes{font-size:15px;font-weight:800;text-transform:capitalize;display:flex;justify-content:space-between;align-items:center}
   .cal .mes .hoje{font-size:10px;background:var(--acc);color:#fff;padding:2px 7px;border-radius:10px;font-weight:700}
+  .cal .mes .health{font-size:16px}
   .cal .lin{display:flex;justify-content:space-between;font-size:13px;margin-top:9px}
   .cal .lin .l{color:var(--mut)} .cal .lin .v{font-weight:700}
+  .cal .prog-wrap{margin-top:8px}
+  .cal .prog-wrap .prog-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--mut2);margin-bottom:4px}
+  .cal .prog-track{height:6px;background:var(--bg2);border-radius:4px;overflow:hidden}
+  .cal .prog-fill{height:100%;border-radius:4px;transition:width .5s}
   .cal .saldo{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:14px}
   .cal .flag{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:rgba(234,179,8,.14);color:var(--yellow);padding:3px 8px;border-radius:8px;margin-top:10px}
   .cal .add{margin-top:12px;width:100%;background:var(--bg2);border:1px dashed var(--line);color:var(--mut);padding:8px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:13px;transition:.15s}
