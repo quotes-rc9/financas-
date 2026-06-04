@@ -797,7 +797,7 @@ function renderReceber(){
 
 // ── META DE POUPANÇA ──────────────────────────────────────────
 const MP_KEY='fin_meta_poupanca';
-function loadFontes(){try{return JSON.parse(localStorage.getItem(MP_KEY))||[];}catch{return[];}}
+function loadFontes(){try{return JSON.parse(localStorage.getItem(MP_KEY))||[];}catch(e){return[];}}
 function saveFontes(f){localStorage.setItem(MP_KEY,JSON.stringify(f));}
 
 function renderFontes(){
