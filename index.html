@@ -284,6 +284,16 @@
       <h2>📝 Lançamentos do mês</h2>
       <button class="btn" onclick="openLanc()">＋ Novo lançamento</button>
     </div>
+    <div class="kpis" id="lancKpis" style="margin-bottom:16px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+      <span style="font-size:13px;color:var(--mut);font-weight:600">Filtrar:</span>
+      <button class="fbtn on" id="lf_todos" onclick="lancFiltro('todos')">Todos</button>
+      <button class="fbtn" id="lf_despesa" onclick="lancFiltro('despesa')">🔴 Despesas</button>
+      <button class="fbtn" id="lf_receita" onclick="lancFiltro('receita')">🟢 Receitas</button>
+      <button class="fbtn" id="lf_pendente" onclick="lancFiltro('pendente')">⏳ Pendentes</button>
+      <button class="fbtn" id="lf_pago" onclick="lancFiltro('pago')">✅ Pagos</button>
+      <input id="lancSearch" placeholder="🔍 Buscar..." oninput="renderLanc()" style="margin-left:auto;background:var(--card2);border:1px solid var(--line);color:var(--txt);padding:7px 13px;border-radius:20px;font-size:13px;font-family:inherit;outline:none;width:180px">
+    </div>
     <div class="panel" style="padding:0;overflow:auto"><table id="lancTable"></table></div>
   </section>
 
