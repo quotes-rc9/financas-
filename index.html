@@ -263,11 +263,18 @@
     <div class="toolbar">
       <h2>📅 Calendário & Projeção</h2>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn ghost sm" onclick="calMeses=12;renderProjecao()">12 meses</button>
-        <button class="btn ghost sm" onclick="calMeses=24;renderProjecao()">24 meses</button>
+        <button class="btn ghost sm" id="btn12" onclick="calMeses=12;renderProjecao()">12 meses</button>
+        <button class="btn ghost sm" id="btn24" onclick="calMeses=24;renderProjecao()">24 meses</button>
       </div>
     </div>
     <div class="kpis" id="projKpis"></div>
+    <div class="proj-chart"><h4>📊 Evolução do saldo mensal</h4><div class="proj-bars" id="projBars"></div></div>
+    <div class="proj-filters">
+      <span>Filtrar:</span>
+      <button class="fbtn on" id="fAll" onclick="projFiltro('todos')">Todos</button>
+      <button class="fbtn" id="fDef" onclick="projFiltro('deficit')">🔴 Déficit</button>
+      <button class="fbtn" id="fSup" onclick="projFiltro('superavit')">🟢 Superávit</button>
+    </div>
     <div class="cal-grid" id="calGrid"></div>
   </section>
 
