@@ -777,6 +777,110 @@ function renderReceber(){
   }).join('');
 }
 
+// ── META DE POUPANÇA ──────────────────────────────────────────
+const MP_KEY='fin_meta_poupanca';
+function loadFontes(){try{return JSON.parse(localStorage.getItem(MP_KEY))||[];}catch{return[];}}
+function saveFontes(f){localStorage.setItem(MP_KEY,JSON.stringify(f));}
+
+function renderFontes(){
+  const fontes=loadFontes();
+  const lm=lancMes();
+  const jaGuardado=lm.filter(l=>l.tipo==='receita'&&l.categoria==='Poupança').reduce((s,l)=>s+ +l.valor,0);
+  const totalMeta=fontes.reduce((s,f)=>s+(+f.valor*0.2),0);
+  const totalRenda=fontes.reduce((s,f)=>s+ +f.valor,0);
+  const pct=totalMeta>0?Math.min(100,jaGuardado/totalMeta*100):0;
+  const barColor=pct>=100?'var(--green)':pct>=50?'var(--yellow)':'var(--red)';
+
+  if(!$('fontesLista'))return;
+  $('fontesLista').innerHTML=fontes.map((f,i)=>`
+    <div style="display:grid;grid-template-columns:1fr 160px 36px;gap:10px;align-items:center">
+      <input value="${f.nome}" placeholder="Nome da fonte (ex: Salário)" oninput="atualizaFonte(${i},'nome',this.value)"
+        style="background:var(--bg2);border:1px solid var(--line);color:var(--txt);padding:10px 13px;border-radius:11px;font-size:14px;font-family:inherit;outline:none">
+      <input type="number" value="${f.valor}" placeholder="Valor R$" oninput="atualizaFonte(${i},'valor',this.value)"
+        style="background:var(--bg2);border:1px solid var(--line);color:var(--txt);padding:10px 13px;border-radius:11px;font-size:14px;font-family:inherit;outline:none">
+      <button class="ico-btn del" onclick="removeFonte(${i})">🗑️</button>
+    </div>`).join('');
+
+  $('resumoPoupanca').innerHTML=fontes.length?`
+    <div style="background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div>
+          <div style="font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px">Meta total de poupança (20% de cada fonte)</div>
+          <div style="font-size:26px;font-weight:800;color:var(--acc);margin-top:4px">${brl(totalMeta)}<span style="font-size:14px;color:var(--mut)">/mês</span></div>
+          <div style="font-size:12px;color:var(--mut2);margin-top:2px">Renda total: ${brl(totalRenda)}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px">Já guardado este mês</div>
+          <div style="font-size:26px;font-weight:800;color:${pct>=100?'var(--green)':'var(--yellow)';margin-top:4px}">${brl(jaGuardado)}</div>
+          <div style="font-size:12px;color:var(--mut2);margin-top:2px">Falta: ${brl(Math.max(0,totalMeta-jaGuardado))}</div>
+        </div>
+      </div>
+      <div style="height:12px;background:var(--bg2);border-radius:8px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${barColor};border-radius:8px;transition:width .5s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mut2);margin-top:6px"><span>${pct.toFixed(0)}% da meta atingida</span><span>Meta: ${brl(totalMeta)}</span></div>
+      ${fontes.map(f=>{
+        const meta=+f.valor*0.2;
+        return `<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+          <span style="color:var(--mut)">${f.nome}</span>
+          <span>${brl(+f.valor)} × 20% = <b style="color:var(--acc)">${brl(meta)}</b></span>
+        </div>`;
+      }).join('')}
+    </div>`:
+    '<div style="font-size:13px;color:var(--mut2)">Adicione suas fontes de renda para calcular a meta.</div>';
+}
+
+function addFonte(){
+  const fontes=loadFontes();
+  fontes.push({nome:'',valor:0});
+  saveFontes(fontes);
+  renderFontes();
+}
+function removeFonte(i){
+  const fontes=loadFontes();
+  fontes.splice(i,1);
+  saveFontes(fontes);
+  renderFontes();
+}
+function atualizaFonte(i,campo,val){
+  const fontes=loadFontes();
+  fontes[i][campo]=val;
+  saveFontes(fontes);
+  // atualiza só o resumo sem re-renderizar os inputs
+  const lm=lancMes();
+  const jaGuardado=lm.filter(l=>l.tipo==='receita'&&l.categoria==='Poupança').reduce((s,l)=>s+ +l.valor,0);
+  const totalMeta=fontes.reduce((s,f)=>s+(+f.valor*0.2),0);
+  const totalRenda=fontes.reduce((s,f)=>s+ +f.valor,0);
+  const pct=totalMeta>0?Math.min(100,jaGuardado/totalMeta*100):0;
+  const barColor=pct>=100?'var(--green)':pct>=50?'var(--yellow)':'var(--red)';
+  if($('resumoPoupanca')&&fontes.length)
+    $('resumoPoupanca').innerHTML=`
+      <div style="background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+          <div>
+            <div style="font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px">Meta total de poupança (20% de cada fonte)</div>
+            <div style="font-size:26px;font-weight:800;color:var(--acc);margin-top:4px">${brl(totalMeta)}<span style="font-size:14px;color:var(--mut)">/mês</span></div>
+            <div style="font-size:12px;color:var(--mut2);margin-top:2px">Renda total: ${brl(totalRenda)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px">Já guardado este mês</div>
+            <div style="font-size:26px;font-weight:800;color:${pct>=100?'var(--green)':'var(--yellow)'};margin-top:4px">${brl(jaGuardado)}</div>
+            <div style="font-size:12px;color:var(--mut2);margin-top:2px">Falta: ${brl(Math.max(0,totalMeta-jaGuardado))}</div>
+          </div>
+        </div>
+        <div style="height:12px;background:var(--bg2);border-radius:8px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:8px;transition:width .5s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mut2);margin-top:6px"><span>${pct.toFixed(0)}% da meta atingida</span><span>Meta: ${brl(totalMeta)}</span></div>
+        ${fontes.map(f=>{const meta=+f.valor*0.2;return `<div style="display:flex;justify-content:space-between;font-size:13px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"><span style="color:var(--mut)">${f.nome}</span><span>${brl(+f.valor)} × 20% = <b style="color:var(--acc)">${brl(meta)}</b></span></div>`;}).join('')}
+      </div>`;
+}
+function salvarMetaPoupanca(){
+  toast('Meta de poupança salva!');
+  renderFontes();
+  renderSugestoes();
+}
+
 function renderPlanos(){
   if(!planosOk){
     $('planosKpis').innerHTML='';
