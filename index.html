@@ -704,6 +704,24 @@ function renderSugestoes(){
   else if(receitas>0)
     sugs.push({cor:'var(--green)',ico:'📐',titulo:'Regra 50/30/20',texto:`Suas necessidades básicas consomem <b>${pctNec.toFixed(0)}%</b> da renda — dentro do recomendado (até 50%). Bom equilíbrio!`});
 
+  // monitor opção 3 — 20% por fonte
+  const fontes=loadFontes();
+  if(fontes.length>0){
+    const totalMeta=fontes.reduce((s,f)=>s+(+f.valor*0.2),0);
+    const jaGuardado=lm.filter(l=>l.tipo==='receita'&&l.categoria==='Poupança').reduce((s,l)=>s+ +l.valor,0);
+    const falta=Math.max(0,totalMeta-jaGuardado);
+    const pctP=totalMeta>0?Math.min(100,jaGuardado/totalMeta*100):0;
+    const barColor=pctP>=100?'var(--green)':pctP>=50?'var(--yellow)':'var(--red)';
+    const detalhes=fontes.map(f=>`<b>${f.nome}</b>: ${brl(+f.valor)} × 20% = <b>${brl(+f.valor*0.2)}</b>`).join(' &nbsp;|&nbsp; ');
+    sugs.push({cor:pctP>=100?'var(--green)':pctP>=50?'var(--yellow)':'var(--red)',ico:'🏦',titulo:`Poupança — Opção 3: 20% por fonte (${pctP.toFixed(0)}% atingido)`,
+      texto:`Meta: <b>${brl(totalMeta)}</b> | Guardado: <b style="color:var(--green)">${brl(jaGuardado)}</b> | Falta: <b style="color:var(--red)">${brl(falta)}</b><br>
+      <div style="height:8px;background:var(--bg2);border-radius:6px;overflow:hidden;margin:8px 0"><div style="height:100%;width:${pctP}%;background:${barColor};border-radius:6px;transition:width .5s"></div></div>
+      <span style="font-size:12px">${detalhes}</span><br>
+      <span style="font-size:12px;color:var(--mut2)">💡 Para registrar poupança, lance uma receita com categoria <b>Poupança</b>.</span>`});
+  } else {
+    sugs.push({cor:'var(--acc)',ico:'🏦',titulo:'Configure sua meta de poupança',texto:`Vá em <b>Planos → Meta de Poupança</b> e informe suas fontes de renda. O sistema calculará automaticamente 20% de cada uma e monitorará aqui.`});
+  }
+
   const html=`
     <div class="kpis" style="margin-bottom:20px">
       ${kpi('green','💰','Receitas do mês',brl(receitas),'')}
