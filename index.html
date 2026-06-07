@@ -391,6 +391,7 @@ async function loadAll(){
 }
 let planosOk=true;
 function setupRealtime(){
+  let reconTimer=null;
   sb.channel('fin-all')
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_cartoes'},loadAll)
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_lancamentos'},loadAll)
@@ -399,8 +400,18 @@ function setupRealtime(){
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_planos'},loadAll)
    .subscribe(s=>{
       const live=s==='SUBSCRIBED';
-      $('statusDot').className='dot'+(live?'':' off');
-      $('syncTxt').innerHTML=live?'🟢 ao vivo':'🔴 reconectando…';
+      if(live){
+        clearTimeout(reconTimer);
+        $('statusDot').className='dot';
+        $('syncTxt').innerHTML='🟢 ao vivo';
+      } else {
+        // só mostra "reconectando" depois de 5 segundos desconectado
+        if(!reconTimer) reconTimer=setTimeout(()=>{
+          $('statusDot').className='dot off';
+          $('syncTxt').innerHTML='🔴 reconectando…';
+          reconTimer=null;
+        },5000);
+      }
    });
 }
 
