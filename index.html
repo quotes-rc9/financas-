@@ -251,6 +251,51 @@
     .row2{grid-template-columns:1fr}
     .hero .hbig{font-size:26px}
   }
+
+  /* ===== MENU LATERAL ===== */
+  .layout{display:flex;align-items:flex-start}
+  .sidebar{position:sticky;top:64px;height:calc(100vh - 64px);width:225px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--line);padding:16px 12px;overflow-y:auto;z-index:20}
+  .sidebar .tabs{flex-direction:column;gap:5px;padding:0;overflow:visible}
+  .sidebar .tab{border-radius:10px;border:1px solid transparent;width:100%;font-size:14px;padding:11px 14px}
+  .sidebar .tab:hover{background:var(--card)}
+  .sidebar .tab.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+  main{flex:1;min-width:0}
+  .hamb{display:none}
+  .sb-backdrop{display:none}
+
+  /* ===== CALENDÁRIO DE VENCIMENTOS ===== */
+  .calwrap{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+  .calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .calhead .cm{font-size:17px;font-weight:800;text-transform:capitalize}
+  .calhead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:17px;transition:.15s}
+  .calhead button:hover{background:var(--acc);border-color:var(--acc)}
+  .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .calgrid .dow{text-align:center;font-size:11px;color:var(--mut2);font-weight:700;text-transform:uppercase;padding:4px 0}
+  .cell{min-height:86px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:6px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+  .cell:hover{border-color:var(--acc)}
+  .cell.empty{background:transparent;border:none;cursor:default}
+  .cell.today{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+  .cell .dn{font-size:12px;font-weight:700;color:var(--mut)}
+  .cell.today .dn{color:var(--acc)}
+  .ev{font-size:10.5px;padding:2px 5px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:#fff}
+  .ev.done{opacity:.55;text-decoration:line-through}
+  .callegend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--mut)}
+  .callegend .li{display:flex;align-items:center;gap:6px}
+  .callegend .dot2{width:10px;height:10px;border-radius:50%}
+
+  @media(max-width:680px){
+    .sidebar{position:fixed;top:0;left:0;height:100vh;width:240px;transform:translateX(-100%);transition:transform .25s;z-index:80;box-shadow:0 0 40px rgba(0,0,0,.5);padding-top:18px}
+    .sidebar.open{transform:none}
+    .sb-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:75}
+    .sb-backdrop.show{display:block}
+    .hamb{display:inline-flex}
+    .cell{min-height:52px;padding:4px;border-radius:8px;gap:2px}
+    .cell .dn{font-size:11px}
+    .ev{font-size:8.5px;padding:1px 4px}
+    .calgrid{gap:3px}
+    .calgrid .dow{font-size:9px}
+    .calwrap{padding:12px}
+  }
 </style>
 </head>
 <body>
@@ -271,6 +316,7 @@
 </div>
 
 <header>
+  <button class="ico-btn hamb" onclick="toggleSidebar()" title="Menu" style="font-size:20px">☰</button>
   <div class="logo"><span class="dot" id="statusDot"></span> Finanças Pessoais</div>
   <div class="month-nav">
     <span class="sync" id="syncTxt">🟢 ao vivo</span>
@@ -282,16 +328,21 @@
   <button class="ico-btn" title="Sair" onclick="doLogout()" style="font-size:18px">🚪</button>
 </header>
 
-<nav class="tabs">
-  <div class="tab active" data-v="dash" onclick="setTab('dash')">📊 Visão Geral</div>
-  <div class="tab" data-v="projecao" onclick="setTab('projecao')">📈 Projeção</div>
-  <div class="tab" data-v="lanc" onclick="setTab('lanc')">📝 Lançamentos</div>
-  <div class="tab" data-v="cartoes" onclick="setTab('cartoes')">💳 Cartões</div>
-  <div class="tab" data-v="receber" onclick="setTab('receber')">📥 A Receber</div>
-  <div class="tab" data-v="emprestimos" onclick="setTab('emprestimos')">🏦 Empréstimos</div>
-  <div class="tab" data-v="planos" onclick="setTab('planos')">🎯 Planos</div>
-  <div class="tab" data-v="sugestoes" onclick="setTab('sugestoes')">💡 Sugestões</div>
-</nav>
+<div class="layout">
+<aside class="sidebar" id="sidebar">
+  <nav class="tabs">
+    <div class="tab active" data-v="dash" onclick="setTab('dash')">📊 Visão Geral</div>
+    <div class="tab" data-v="calendario" onclick="setTab('calendario')">📆 Vencimentos</div>
+    <div class="tab" data-v="projecao" onclick="setTab('projecao')">📈 Projeção</div>
+    <div class="tab" data-v="lanc" onclick="setTab('lanc')">📝 Lançamentos</div>
+    <div class="tab" data-v="cartoes" onclick="setTab('cartoes')">💳 Cartões</div>
+    <div class="tab" data-v="receber" onclick="setTab('receber')">📥 A Receber</div>
+    <div class="tab" data-v="emprestimos" onclick="setTab('emprestimos')">🏦 Empréstimos</div>
+    <div class="tab" data-v="planos" onclick="setTab('planos')">🎯 Planos</div>
+    <div class="tab" data-v="sugestoes" onclick="setTab('sugestoes')">💡 Sugestões</div>
+  </nav>
+</aside>
+<div class="sb-backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
 
 <main>
   <!-- DASHBOARD (destaque do mês) -->
@@ -302,6 +353,29 @@
     <div class="grid2">
       <div class="panel" id="proxBox"></div>
       <div class="panel" id="pagasBox"></div>
+    </div>
+  </section>
+
+  <!-- CALENDÁRIO DE VENCIMENTOS -->
+  <section class="view" id="view-calendario">
+    <div class="toolbar">
+      <h2>📆 Calendário de Vencimentos</h2>
+      <button class="btn" onclick="novoEvento('')">＋ Novo lembrete</button>
+    </div>
+    <div class="calwrap">
+      <div class="calhead">
+        <button onclick="changeMonth(-1)">‹</button>
+        <div class="cm" id="calMesLbl">—</div>
+        <button onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="calgrid" id="calGridV"></div>
+      <div class="callegend">
+        <span class="li"><span class="dot2" style="background:var(--yellow)"></span> Pendente</span>
+        <span class="li"><span class="dot2" style="background:var(--green)"></span> Pago</span>
+        <span class="li"><span class="dot2" style="background:var(--red)"></span> Atrasado</span>
+        <span class="li"><span class="dot2" style="background:var(--blue)"></span> A receber</span>
+      </div>
+      <p style="font-size:12.5px;color:var(--mut2);margin-top:12px">💡 Toque em qualquer dia para criar um lembrete, vencimento ou entrada. Eles viram alertas na Visão Geral.</p>
     </div>
   </section>
 
@@ -401,6 +475,7 @@
     <div id="sugestoesContent"></div>
   </section>
 </main>
+</div>
 
 <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
 <div id="toast"></div>
@@ -412,30 +487,34 @@ const SB_KEY='sb_publishable_d8GEJZIC7_3u1Rsrw1ZbJQ_TcKtxbC7';
 const sb=supabase.createClient(SB_URL,SB_KEY);
 
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-let state={cartoes:[],lancamentos:[],areceber:[],emprestimos:[],planos:[]};
+let state={cartoes:[],lancamentos:[],areceber:[],emprestimos:[],planos:[],eventos:[]};
 let cur=(()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),1);})(); // sempre inicia no mês atual
 let calMeses=12; // quantos meses mostrar no calendário
 
 const brl=v=>(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const compStr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+const dayStr=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const $=id=>document.getElementById(id);
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 
 // ---------- DATA ----------
 async function loadAll(){
-  const [c,l,r,e,p]=await Promise.all([
+  const [c,l,r,e,p,ev]=await Promise.all([
     sb.from('fin_cartoes').select('*').order('ordem'),
     sb.from('fin_lancamentos').select('*').order('criado_em'),
     sb.from('fin_a_receber').select('*').order('criado_em'),
     sb.from('fin_emprestimos').select('*').order('criado_em'),
-    sb.from('fin_planos').select('*').order('ordem')
+    sb.from('fin_planos').select('*').order('ordem'),
+    sb.from('fin_eventos').select('*').order('data')
   ]);
   state.cartoes=c.data||[]; state.lancamentos=l.data||[];
   state.areceber=r.data||[]; state.emprestimos=e.data||[]; state.planos=p.data||[];
+  state.eventos=ev.data||[];
   planosOk = !p.error;  // se a tabela não existe, p.error existe
+  eventosOk = !ev.error;
   render();
 }
-let planosOk=true;
+let planosOk=true, eventosOk=true;
 function setupRealtime(){
   let reconTimer=null;
   sb.channel('fin-all')
@@ -444,6 +523,7 @@ function setupRealtime(){
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_a_receber'},loadAll)
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_emprestimos'},loadAll)
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_planos'},loadAll)
+   .on('postgres_changes',{event:'*',schema:'public',table:'fin_eventos'},loadAll)
    .subscribe(s=>{
       const live=s==='SUBSCRIBED';
       if(live){
@@ -469,13 +549,115 @@ function lancMes(){const cs=compStr(cur);return state.lancamentos.filter(l=>l.co
 function setTab(v){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.v===v));
   document.querySelectorAll('.view').forEach(s=>s.classList.toggle('active',s.id==='view-'+v));
+  closeSidebar();
 }
+function toggleSidebar(){$('sidebar').classList.toggle('open');$('sbBackdrop').classList.toggle('show');}
+function closeSidebar(){$('sidebar').classList.remove('open');$('sbBackdrop').classList.remove('show');}
 function changeMonth(d){cur=new Date(cur.getFullYear(),cur.getMonth()+d,1);render();}
+
+// ---------- CALENDÁRIO DE VENCIMENTOS ----------
+function eventoCor(e){
+  if(e.status==='pago'||e.status==='recebido') return 'var(--green)';
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const dt=new Date(e.data+'T00:00');
+  if(dt<hoje) return 'var(--red)';            // venceu e não foi pago = atrasado
+  if(e.tipo==='entrada') return 'var(--blue)'; // a receber
+  return 'var(--yellow)';                      // pendente
+}
+function renderCalendario(){
+  const y=cur.getFullYear(), m=cur.getMonth();
+  if($('calMesLbl')) $('calMesLbl').textContent=`${MESES[m]} ${y}`;
+  const grid=$('calGridV'); if(!grid) return;
+  const first=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const evs=state.eventos||[];
+  let html='';
+  ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(d=>html+=`<div class="dow">${d}</div>`);
+  for(let i=0;i<first;i++) html+='<div class="cell empty"></div>';
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=new Date(y,m,d).getTime()===hoje.getTime();
+    const dayEvs=evs.filter(e=>e.data===ds);
+    const evHtml=dayEvs.slice(0,3).map(e=>{
+      const done=e.status==='pago'||e.status==='recebido';
+      return `<div class="ev${done?' done':''}" style="background:${eventoCor(e)}" onclick='event.stopPropagation();openEvento(${JSON.stringify(e)})' title="${e.titulo}">${e.titulo}</div>`;
+    }).join('');
+    const mais=dayEvs.length>3?`<div style="font-size:9px;color:var(--mut2)">+${dayEvs.length-3} mais</div>`:'';
+    html+=`<div class="cell${isToday?' today':''}" onclick="novoEvento('${ds}')"><div class="dn">${d}</div>${evHtml}${mais}</div>`;
+  }
+  grid.innerHTML=html;
+}
+function renderAlertas(){
+  const box=$('alertBox'); if(!box) return;
+  const evs=(state.eventos||[]).filter(e=>e.status!=='pago'&&e.status!=='recebido');
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  const dias=e=>(new Date(e.data+'T00:00')-hoje)/86400000;
+  const atrasados=evs.filter(e=>dias(e)<0).sort((a,b)=>a.data<b.data?-1:1);
+  const hojeEvs=evs.filter(e=>dias(e)===0);
+  const breve=evs.filter(e=>dias(e)>0&&dias(e)<=7).sort((a,b)=>a.data<b.data?-1:1);
+  if(!atrasados.length&&!hojeEvs.length&&!breve.length){box.innerHTML='';return;}
+  const linha=(e,cor,pre)=>`<div onclick='openEvento(${JSON.stringify(e)})' style="cursor:pointer;display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--bg2);font-size:13px;align-items:center">
+    <span><span style="color:${cor};font-weight:700">${pre}</span> ${e.titulo}</span>
+    <span style="color:var(--mut);white-space:nowrap">${new Date(e.data+'T00:00').toLocaleDateString('pt-BR')}${+e.valor>0?' • '+brl(+e.valor):''}</span></div>`;
+  let h=`<div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:18px;box-shadow:var(--shadow)">
+    <div style="font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px">🔔 Alertas de vencimento <span style="font-size:12px;color:var(--mut);font-weight:600">(${atrasados.length+hojeEvs.length+breve.length})</span></div>`;
+  atrasados.forEach(e=>h+=linha(e,'var(--red)','⚠ Atrasado'));
+  hojeEvs.forEach(e=>h+=linha(e,'var(--yellow)','● Vence hoje'));
+  breve.forEach(e=>h+=linha(e,'var(--blue)','◷ Em breve'));
+  h+='</div>';
+  box.innerHTML=h;
+}
+function novoEvento(ds){openEvento({data:ds||dayStr(new Date())});}
+function openEvento(ev){
+  ev=ev||{}; const isEdit=!!ev.id;
+  showModal(`
+   <div class="mh"><h3>${isEdit?'✏️ Editar':'＋ Novo'} lembrete</h3><button class="ico-btn" onclick="closeModal()">✕</button></div>
+   <div class="mb">
+     <div class="field"><label>Título</label><input id="ev_tit" value="${ev.titulo||''}" placeholder="Ex: Conta de luz, Salário..."></div>
+     <div class="row2">
+       <div class="field"><label>Data</label><input id="ev_data" type="date" value="${ev.data||''}"></div>
+       <div class="field"><label>Valor (R$) — opcional</label><input id="ev_valor" type="number" step="0.01" value="${ev.valor||''}" placeholder="0,00"></div>
+     </div>
+     <div class="row2">
+       <div class="field"><label>Tipo</label><select id="ev_tipo">
+         <option value="vencimento" ${ev.tipo==='vencimento'?'selected':''}>📄 Vencimento</option>
+         <option value="pagamento" ${ev.tipo==='pagamento'?'selected':''}>💸 Pagamento</option>
+         <option value="entrada" ${ev.tipo==='entrada'?'selected':''}>💰 Entrada / a receber</option>
+         <option value="lembrete" ${(ev.tipo==='lembrete'||!ev.tipo)?'selected':''}>🔔 Lembrete</option>
+       </select></div>
+       <div class="field"><label>Status</label><select id="ev_status">
+         <option value="pendente" ${(ev.status!=='pago'&&ev.status!=='recebido')?'selected':''}>Pendente</option>
+         <option value="pago" ${ev.status==='pago'?'selected':''}>Pago / feito</option>
+       </select></div>
+     </div>
+     <div class="field"><label>Observação</label><input id="ev_obs" value="${ev.observacao||''}"></div>
+   </div>
+   <div class="mf">${isEdit?`<button class="btn ghost" style="margin-right:auto;color:var(--red)" onclick="delRow('fin_eventos','${ev.id}');closeModal()">🗑️ Excluir</button>`:''}<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveEvento('${ev.id||''}')">Salvar</button></div>`);
+}
+async function saveEvento(id){
+  const data={
+    titulo:$('ev_tit').value.trim(),
+    data:$('ev_data').value,
+    valor:parseFloat($('ev_valor').value)||0,
+    tipo:$('ev_tipo').value,
+    status:$('ev_status').value,
+    observacao:$('ev_obs').value.trim()||null
+  };
+  if(!data.titulo){toast('Informe o título');return;}
+  if(!data.data){toast('Escolha a data');return;}
+  let res;
+  if(id) res=await sb.from('fin_eventos').update(data).eq('id',id);
+  else res=await sb.from('fin_eventos').insert(data);
+  if(res.error){toast('Erro: crie a tabela fin_eventos no banco');return;}
+  toast(id?'Lembrete atualizado':'Lembrete criado ✓');
+  closeModal(); loadAll();
+}
 
 // ---------- RENDER ----------
 function render(){
   $('monthLbl').textContent=`${MESES[cur.getMonth()]} ${cur.getFullYear()}`;
-  renderDash(); renderProjecao(); renderLanc(); renderCartoes(); renderReceber(); renderEmprestimos(); renderPlanos(); renderSugestoes();
+  renderDash(); renderCalendario(); renderProjecao(); renderLanc(); renderCartoes(); renderReceber(); renderEmprestimos(); renderPlanos(); renderSugestoes();
 }
 
 // ---------- PROJEÇÃO ----------
@@ -637,7 +819,7 @@ function renderDash(){
     ${kpi('green','📥','A receber',brl(aReceber),state.areceber.filter(r=>r.status==='pendente').length+' pessoas')}
     ${kpi('blue','🎯','Planos',state.planos.length,'metas ativas')}`;
 
-  $('alertBox').innerHTML='';
+  renderAlertas();
 
   // CONTAS PENDENTES (destaque)
   const prox=despesas.filter(l=>l.status!=='pago').sort((a,b)=>b.valor-a.valor);
