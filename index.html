@@ -531,10 +531,12 @@ async function loadAll(){
     sb.from('fin_planos').select('*').order('ordem'),
     sb.from('fin_eventos').select('*').order('data')
   ]);
+  // se as tabelas principais falharem, não sobrescreve o estado com arrays vazios
+  if(c.error||l.error||r.error||e.error) return;
   state.cartoes=c.data||[]; state.lancamentos=l.data||[];
   state.areceber=r.data||[]; state.emprestimos=e.data||[]; state.planos=p.data||[];
   state.eventos=ev.data||[];
-  planosOk = !p.error;  // se a tabela não existe, p.error existe
+  planosOk = !p.error;
   eventosOk = !ev.error;
   saveCache();
   render();
