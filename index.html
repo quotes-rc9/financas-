@@ -378,6 +378,7 @@
     <div id="alertBox"></div>
     <div id="heroMes"></div>
     <div class="kpis" id="kpis"></div>
+    <div id="evolucaoBox"></div>
     <div class="grid2">
       <div class="panel" id="proxBox"></div>
       <div class="panel" id="pagasBox"></div>
@@ -904,11 +905,25 @@ function renderDash(){
 
   renderAlertas();
 
+  // BARRA PAGO VS PENDENTE
+  const paidPendBar=totDesp>0?`<div style="background:var(--card2);border-radius:12px;padding:12px 14px;margin-bottom:14px;border:1px solid var(--line)">
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px">
+      <span style="color:var(--green);font-weight:700">✅ ${brl(pago)} pago</span>
+      <span style="color:var(--yellow);font-weight:700">⏳ ${brl(falta)} falta</span>
+    </div>
+    <div style="height:10px;background:var(--bg2);border-radius:6px;overflow:hidden">
+      <div style="width:${pctPago}%;height:100%;background:var(--green);border-radius:6px;transition:width .5s"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut2);margin-top:5px">
+      <span>${pctPago.toFixed(0)}% pago</span><span>${(100-pctPago).toFixed(0)}% pendente</span>
+    </div>
+  </div>`:'';
+
   // CONTAS PENDENTES (destaque)
   const prox=despesas.filter(l=>l.status!=='pago').sort((a,b)=>b.valor-a.valor);
-  $('proxBox').innerHTML=`<h3><span class="t">🔔 Contas a pagar</span><button class="btn sm ghost" onclick="openLanc()">＋ nova</button></h3>`+
+  $('proxBox').innerHTML=`<h3><span class="t">🔔 Contas a pagar</span><button class="btn sm ghost" onclick="openLanc()">＋ nova</button></h3>${paidPendBar}`+
     (prox.length?`<div class="bars">`+prox.map(l=>`
-      <div class="barrow" style="cursor:pointer;display:flex;align-items:center;gap:12px" onclick="toggleLanc('${l.id}','${l.status}')" title="Clique para marcar como paga">
+      <div class="barrow" style="cursor:pointer;display:flex;align-items:center;gap:12px" onclick="openLancById('${l.id}')" title="Clique para ver detalhes">
         <div style="flex:1"><div class="top"><span class="nm">${l.descricao} <span class="tag cat" style="font-size:10px">${l.categoria}</span></span><span class="vl">${brl(+l.valor)}</span></div>
         <div class="track"><div class="fill" style="width:100%;background:var(--yellow)"></div></div></div>
         <span style="font-size:18px">⭕</span></div>`).join('')+`</div>`
@@ -918,11 +933,40 @@ function renderDash(){
   const pagas=despesas.filter(l=>l.status==='pago').sort((a,b)=>b.valor-a.valor);
   $('pagasBox').innerHTML=`<h3><span class="t">✅ Contas pagas</span><span style="font-size:13px;color:var(--green);font-weight:700">${brl(pago)}</span></h3>`+
     (pagas.length?`<div class="bars">`+pagas.map(l=>`
-      <div class="barrow" style="cursor:pointer;display:flex;align-items:center;gap:12px;opacity:.8" onclick="toggleLanc('${l.id}','${l.status}')" title="Clique para desmarcar">
+      <div class="barrow" style="cursor:pointer;display:flex;align-items:center;gap:12px;opacity:.8" onclick="openLancById('${l.id}')" title="Clique para ver detalhes">
         <div style="flex:1"><div class="top"><span class="nm">${l.descricao}</span><span class="vl">${brl(+l.valor)}</span></div>
         <div class="track"><div class="fill" style="width:100%;background:var(--green)"></div></div></div>
         <span style="font-size:18px">✅</span></div>`).join('')+`</div>`
     :'<div class="empty"><div class="e">📭</div>Nada pago ainda.</div>');
+
+  // GRÁFICO EVOLUÇÃO MENSAL
+  const evMs=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(hoje.getFullYear(),hoje.getMonth()-i,1);
+    const ecs=compStr(d);
+    const el=state.lancamentos.filter(x=>x.competencia===ecs&&x.tipo==='despesa');
+    const etot=el.reduce((s,x)=>s+ +x.valor,0);
+    const epag=el.filter(x=>x.status==='pago').reduce((s,x)=>s+ +x.valor,0);
+    evMs.push({lbl:MESES[d.getMonth()].substring(0,3),tot:etot,pag:epag,isCur:ecs===cs,d});
+  }
+  const maxEv=Math.max(...evMs.map(m=>m.tot),1);
+  $('evolucaoBox').innerHTML=`<div class="panel" style="margin-bottom:22px">
+    <h3><span class="t">📊 Evolução de gastos — últimos 6 meses</span></h3>
+    <div style="display:flex;align-items:flex-end;gap:6px;height:90px;margin-bottom:10px">
+      ${evMs.map(m=>`
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer" onclick="irMes(${m.d.getFullYear()},${m.d.getMonth()})">
+          <div style="width:100%;height:${Math.max(4,Math.round(m.tot/maxEv*82))}px;background:${m.isCur?'var(--acc)':'var(--card2)'};border:1px solid ${m.isCur?'var(--acc)':'var(--line)'};border-radius:4px 4px 0 0;position:relative;overflow:hidden">
+            ${m.tot>0?`<div style="position:absolute;bottom:0;left:0;right:0;height:${Math.round(m.pag/m.tot*100)}%;background:var(--green);opacity:.75"></div>`:''}
+          </div>
+          <div style="font-size:10px;color:${m.isCur?'var(--txt)':'var(--mut2)'};">${m.lbl}</div>
+          <div style="font-size:10px;color:var(--mut2)">${m.tot>0?brl(m.tot).replace('R ','').replace('R$ ','').replace('R$','').trim():'-'}</div>
+        </div>`).join('')}
+    </div>
+    <div style="display:flex;gap:16px;font-size:12px;color:var(--mut)">
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--acc);border-radius:2px;margin-right:4px"></span>Total gasto</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px"></span>Já pago</span>
+    </div>
+  </div>`;
 }
 function kpi(cls,ico,lbl,val,sub){return `<div class="kpi ${cls}"><div class="bar-top"></div><div class="ico">${ico}</div>
   <div class="lbl">${lbl}</div><div class="val">${val}</div><div class="sub">${sub}</div></div>`;}
@@ -1474,6 +1518,56 @@ function renderEmprestimos(){
 function shade(hex,p){let n=parseInt(hex.slice(1),16),r=(n>>16)+p,g=(n>>8&255)+p,b=(n&255)+p;
   r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));
   return '#'+(r<<16|g<<8|b).toString(16).padStart(6,'0');}
+
+// ---------- DETALHE LANÇAMENTO ----------
+function openLancById(id){const l=state.lancamentos.find(x=>x.id===id);if(l)openLancDetail(l);}
+async function delLancFromModal(id){if(!confirm('Excluir este lançamento?'))return;await sb.from('fin_lancamentos').delete().eq('id',id);toast('Excluído');closeModal();}
+function openLancDetail(l){
+  const hoje=new Date();
+  const catH=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(hoje.getFullYear(),hoje.getMonth()-i,1);
+    const ecs=compStr(d);
+    const el=state.lancamentos.filter(x=>x.competencia===ecs&&x.categoria===l.categoria&&x.tipo===l.tipo);
+    catH.push({lbl:MESES[d.getMonth()].substring(0,3),tot:el.reduce((s,x)=>s+ +x.valor,0)});
+  }
+  const maxC=Math.max(...catH.map(m=>m.tot),1);
+  const stClr=l.status==='pago'?'var(--green)':'var(--yellow)';
+  const stLbl=l.status==='pago'?'✅ Pago':'⏳ Pendente';
+  const cart=state.cartoes.find(c=>c.id===l.cartao_id);
+  showModal(`
+    <div class="mh"><h3>📋 Lançamento</h3><button class="ico-btn" onclick="closeModal()">✕</button></div>
+    <div class="mb">
+      <div style="background:var(--card2);border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid var(--line)">
+        <div style="font-size:18px;font-weight:800;margin-bottom:8px">${l.descricao}</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <span class="tag cat">${l.categoria}</span>
+          <span class="tag" style="background:${stClr}22;color:${stClr}">${stLbl}</span>
+          ${cart?`<span class="tag cat">💳 ${cart.nome}</span>`:''}
+          ${l.parcela_total>1?`<span class="tag cat">📦 Parcela ${l.parcela_atual}/${l.parcela_total}</span>`:''}
+        </div>
+        <div style="font-size:26px;font-weight:800;color:${l.tipo==='receita'?'var(--green)':'var(--red)'}">${brl(+l.valor)}</div>
+        ${l.observacao?`<div style="margin-top:12px;font-size:13px;color:var(--mut);border-top:1px solid var(--line);padding-top:10px">📝 ${l.observacao}</div>`:''}
+      </div>
+      <div style="margin-bottom:18px">
+        <div style="font-size:11px;color:var(--mut);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📊 Categoria "${l.categoria}" — últimos 6 meses</div>
+        <div style="display:flex;align-items:flex-end;gap:6px;height:70px">
+          ${catH.map((m,i)=>`
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div style="width:100%;height:${Math.max(3,Math.round(m.tot/maxC*62))}px;background:${i===5?'var(--acc)':'var(--card2)'};border:1px solid ${i===5?'var(--acc)':'var(--line)'};border-radius:4px 4px 0 0;opacity:${m.tot>0?1:.25}"></div>
+              <div style="font-size:9px;color:var(--mut2)">${m.lbl}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn" style="background:${l.status==='pago'?'var(--mut2)':'var(--green)'}" onclick="toggleLanc('${l.id}','${l.status}');closeModal()">
+          ${l.status==='pago'?'↩ Marcar pendente':'✅ Marcar como pago'}
+        </button>
+        <button class="btn ghost" onclick="closeModal();setTimeout(()=>{const x=state.lancamentos.find(y=>y.id==='${l.id}');if(x)openLanc(x);},80)">✏️ Editar</button>
+        <button class="btn ghost" style="color:var(--red);margin-left:auto" onclick="delLancFromModal('${l.id}')">🗑 Excluir</button>
+      </div>
+    </div>`);
+}
 
 // ---------- ACTIONS ----------
 async function toggleLanc(id,st){await sb.from('fin_lancamentos').update({status:st==='pago'?'pendente':'pago'}).eq('id',id);}
