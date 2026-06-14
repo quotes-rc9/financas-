@@ -510,6 +510,9 @@ const sb=supabase.createClient(SB_URL,SB_KEY);
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 let state={cartoes:[],lancamentos:[],areceber:[],emprestimos:[],planos:[],eventos:[]};
 let cur=(()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),1);})(); // sempre inicia no mês atual
+const CACHE_KEY='fin_cache_v1';
+function saveCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify({t:Date.now(),s:state}));}catch(e){}}
+function loadCache(){try{const d=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(d&&Date.now()-d.t<3600000)return d.s;}catch(e){}return null;}
 let calMeses=12; // quantos meses mostrar no calendário
 
 const brl=v=>(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -533,6 +536,7 @@ async function loadAll(){
   state.eventos=ev.data||[];
   planosOk = !p.error;  // se a tabela não existe, p.error existe
   eventosOk = !ev.error;
+  saveCache();
   render();
 }
 let planosOk=true, eventosOk=true;
@@ -557,7 +561,7 @@ function setupRealtime(){
           $('statusDot').className='dot off';
           $('syncTxt').innerHTML='🔴 reconectando…';
           reconTimer=null;
-        },5000);
+        },30000);
       }
    });
 }
@@ -1637,9 +1641,18 @@ async function doLogout(){await sb.auth.signOut();location.reload();}
 
 async function startApp(){
   $('loginScreen').style.display='none';
-  $('loading').style.display='flex';
-  try{await loadAll();setupRealtime();$('loading').style.display='none';}
-  catch(err){$('loading').innerHTML='<div style="color:var(--red);text-align:center">Erro ao carregar.<br>'+err.message+'</div>';}
+  const cache=loadCache();
+  if(cache){
+    Object.assign(state,cache);
+    render();
+    $('loading').style.display='none';
+    loadAll().catch(()=>{});
+    setupRealtime();
+  } else {
+    $('loading').style.display='flex';
+    try{await loadAll();setupRealtime();$('loading').style.display='none';}
+    catch(err){$('loading').innerHTML='<div style="color:var(--red);text-align:center">Erro ao carregar.<br>'+err.message+'</div>';}
+  }
 }
 function showLogin(){
   $('loading').style.display='none';
