@@ -871,7 +871,7 @@ function renderDash(){
   const encerrado=state.mesesEncerrados.find(m=>m.competencia===cs);
   const heroStyle=encerrado?'style="background:linear-gradient(135deg,#15803d,#166534)"':'';
   const bannerEnc=encerrado?`<div style="background:rgba(255,255,255,.18);border-radius:10px;padding:8px 14px;margin-bottom:14px;font-size:14px;font-weight:700">✅ Mês encerrado — contas quitadas!</div>`:'';
-  const btFechar=isPast&&!encerrado?`<button class="btn" style="background:rgba(255,255,255,.2);margin-top:8px" onclick="fecharMes()">✅ Fechar Mês</button>`:'';
+  const btFechar=!encerrado?`<button class="btn" style="background:rgba(255,255,255,.2);margin-top:8px" onclick="fecharMes()">✅ Fechar Mês</button>`:'';
   const btReabrir=encerrado?`<button class="btn" style="background:rgba(255,255,255,.15);margin-top:8px" onclick="reabrirMes('${cs}')">↩ Reabrir</button>`:'';
 
   // HERO: foco no mês — quanto falta pagar e progresso
