@@ -205,6 +205,52 @@
   #loading{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
   .spin{width:46px;height:46px;border:4px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:sp 1s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* ===== MOBILE / RESPONSIVO ===== */
+  @media(max-width:680px){
+    header{padding:10px 14px;gap:10px}
+    .logo{font-size:17px}
+    .month-nav{margin-left:auto;gap:6px}
+    .month-nav button{width:32px;height:32px;font-size:16px}
+    .month-lbl{min-width:auto;font-size:13px}
+    .sync{display:none}
+    nav.tabs{padding:10px 12px 0;gap:4px;-webkit-overflow-scrolling:touch}
+    .tab{padding:9px 13px;font-size:13px}
+    main{padding:14px 12px}
+    .toolbar h2{font-size:17px}
+    .kpis{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+    .kpi{padding:14px;border-radius:14px}
+    .kpi .val{font-size:20px}
+    .kpi .ico{font-size:20px}
+    .hero{padding:18px;border-radius:16px}
+    .hero .hbig{font-size:30px}
+    .hero .hrow{gap:16px}
+    .hero .hrow .it .v{font-size:16px}
+    .cards-grid,.cal-grid{grid-template-columns:1fr;gap:12px}
+    .emp-grid{grid-template-columns:repeat(2,1fr)}
+    .donut{width:140px;height:140px}
+    .field input,.field select,.field textarea{font-size:16px}      /* evita o zoom automático do iOS ao focar */
+    #fontesLista>div{grid-template-columns:1fr 96px 34px!important}
+
+    /* Tabela de Lançamentos vira cartões empilhados (sem rolar de lado) */
+    #lancTable thead{display:none}
+    #lancTable,#lancTable tbody,#lancTable tr,#lancTable td{display:block;width:100%}
+    #lancTable tr{background:var(--card2);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;padding:6px 2px}
+    #lancTable tr:hover td{background:transparent}
+    #lancTable td{border:none;padding:6px 14px;display:flex;justify-content:space-between;align-items:center;gap:14px;text-align:right;font-size:14px}
+    #lancTable td::before{content:attr(data-label);color:var(--mut2);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;text-align:left;flex-shrink:0}
+    #lancTable td:first-child{flex-direction:column;align-items:flex-start;text-align:left;border-bottom:1px solid var(--line);padding-bottom:10px}
+    #lancTable td:first-child::before{display:none}
+    #lancTable td.num{font-size:17px;font-weight:800}
+    #lancTable td:last-child{justify-content:flex-end;gap:8px}
+    #lancTable td:last-child::before{display:none}
+    #lancTable .empty{padding:30px 10px}
+  }
+  @media(max-width:420px){
+    .kpis{grid-template-columns:1fr}
+    .row2{grid-template-columns:1fr}
+    .hero .hbig{font-size:26px}
+  }
 </style>
 </head>
 <body>
@@ -648,12 +694,12 @@ function renderLanc(){
     const c=cartaoById(l.cartao_id);
     const isRec=l.tipo==='receita';
     h+=`<tr>
-      <td><b>${l.descricao}</b>${l.recorrente?'<span class="rec">↻ fixo</span>':''}${l.parcela_total>1?`<span class="rec">${l.parcela_atual}/${l.parcela_total}</span>`:''}${l.observacao?`<div style="font-size:12px;color:var(--mut2)">${l.observacao}</div>`:''}</td>
-      <td><span class="tag cat">${l.categoria}</span></td>
-      <td>${c?`<span class="chip-cartao"><span class="d" style="background:${c.cor}"></span>${c.nome}</span>`:'<span style="color:var(--mut2)">—</span>'}</td>
-      <td>${isRec?'<span style="color:var(--green)">⬆ Receita</span>':'<span style="color:var(--red)">⬇ Despesa</span>'}</td>
-      <td><button class="tag badge ${l.status}" onclick="toggleLanc('${l.id}','${l.status}')">${l.status==='pago'?'✓ pago':l.status==='recebido'?'✓ recebido':'● pendente'}</button></td>
-      <td class="num" style="color:${isRec?'var(--green)':'var(--txt)'};font-size:15px">${brl(+l.valor)}</td>
+      <td data-label="Descrição"><b>${l.descricao}</b>${l.recorrente?'<span class="rec">↻ fixo</span>':''}${l.parcela_total>1?`<span class="rec">${l.parcela_atual}/${l.parcela_total}</span>`:''}${l.observacao?`<div style="font-size:12px;color:var(--mut2)">${l.observacao}</div>`:''}</td>
+      <td data-label="Categoria"><span class="tag cat">${l.categoria}</span></td>
+      <td data-label="Cartão">${c?`<span class="chip-cartao"><span class="d" style="background:${c.cor}"></span>${c.nome}</span>`:'<span style="color:var(--mut2)">—</span>'}</td>
+      <td data-label="Tipo">${isRec?'<span style="color:var(--green)">⬆ Receita</span>':'<span style="color:var(--red)">⬇ Despesa</span>'}</td>
+      <td data-label="Status"><button class="tag badge ${l.status}" onclick="toggleLanc('${l.id}','${l.status}')">${l.status==='pago'?'✓ pago':l.status==='recebido'?'✓ recebido':'● pendente'}</button></td>
+      <td class="num" data-label="Valor" style="color:${isRec?'var(--green)':'var(--txt)'};font-size:15px">${brl(+l.valor)}</td>
       <td style="text-align:right;white-space:nowrap"><button class="ico-btn" onclick='openLanc(${JSON.stringify(l)})'>✏️</button><button class="ico-btn del" onclick="delRow('fin_lancamentos','${l.id}')">🗑️</button></td>
     </tr>`;
   });
