@@ -1115,10 +1115,13 @@ async function fecharMes(){
   if(!confirm(`Fechar ${nome}?\n\nIsso indica que você já pagou todas as contas deste mês.`)) return;
   const {error}=await sb.from('fin_meses_encerrados').insert({competencia:cs});
   if(error){toast('Erro ao fechar mês: '+error.message);return;}
-  // muda cur ANTES do loadAll para que todos os renders (inclusive do realtime) usem o mês atual
+  // adiciona ao state local imediatamente (sem esperar realtime)
+  state.mesesEncerrados=[...state.mesesEncerrados,{competencia:cs,criado_em:new Date().toISOString()}];
+  // muda mês ANTES de qualquer render
   const h=new Date(); cur=new Date(h.getFullYear(),h.getMonth(),1);
+  render(); // render síncrono — garante navegação mesmo sem rede
   toast(`${nome} encerrado ✅`);
-  await loadAll();
+  loadAll(); // atualiza dados em background
 }
 async function reabrirMes(cs){
   if(!confirm('Reabrir este mês?')) return;
