@@ -1115,10 +1115,12 @@ async function fecharMes(){
   if(!confirm(`Fechar ${nome}?\n\nIsso indica que você já pagou todas as contas deste mês.`)) return;
   const {error}=await sb.from('fin_meses_encerrados').insert({competencia:cs});
   if(error){toast('Erro ao fechar mês: '+error.message);return;}
+  toast(`${nome} encerrado ✅`);
   await loadAll();
   const h=new Date(); cur=new Date(h.getFullYear(),h.getMonth(),1);
   render();
-  toast(`${nome} encerrado ✅ — voltando para o mês atual`);
+  // aguarda possíveis renders do realtime e força navegação final
+  setTimeout(()=>{const h2=new Date();cur=new Date(h2.getFullYear(),h2.getMonth(),1);render();},800);
 }
 async function reabrirMes(cs){
   if(!confirm('Reabrir este mês?')) return;
