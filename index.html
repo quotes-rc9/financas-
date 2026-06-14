@@ -1115,7 +1115,8 @@ async function fecharMes(){
   if(!confirm(`Fechar ${nome}?\n\nIsso indica que você já pagou todas as contas deste mês.`)) return;
   const {error}=await sb.from('fin_meses_encerrados').insert({competencia:cs});
   if(error){toast('Erro ao fechar mês: '+error.message);return;}
-  toast(`${nome} encerrado ✅`);
+  const h=new Date(); cur=new Date(h.getFullYear(),h.getMonth(),1);
+  toast(`${nome} encerrado ✅ — voltando para o mês atual`);
 }
 async function reabrirMes(cs){
   if(!confirm('Reabrir este mês?')) return;
