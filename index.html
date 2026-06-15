@@ -1823,6 +1823,10 @@ async function startApp(){
   const cache=loadCache();
   if(cache){
     Object.assign(state,cache);
+    // aplica auto-avanço ANTES do primeiro render para evitar flash do mês encerrado
+    const _h=new Date(),_hcs=compStr(_h);
+    if(compStr(cur)===_hcs&&state.mesesEncerrados.find(m=>m.competencia===_hcs))
+      cur=new Date(_h.getFullYear(),_h.getMonth()+1,1);
     render();
     $('loading').style.display='none';
     loadAll().catch(()=>{});
