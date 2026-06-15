@@ -1700,13 +1700,14 @@ function openReceber(r){
      </div>
      <div class="row2">
        <div class="field"><label>🗓️ Prazo (até quando)</label><input id="r_prazo" type="date" value="${r.prazo||''}"></div>
-       <div class="field"><label>Status</label><select id="r_status"><option value="pendente" ${r.status!=='recebido'?'selected':''}>Ativo (recebendo)</option><option value="recebido" ${r.status==='recebido'?'selected':''}>Quitado</option></select></div>
+       <div class="field"><label>Status do recebimento</label><select id="r_status"><option value="pendente" ${r.status!=='recebido'&&r.ultimo_mes_recebido!==compStr(cur)?'selected':''}>⏳ Pendente — não recebido este mês</option><option value="recebido_mes" ${r.status!=='recebido'&&r.ultimo_mes_recebido===compStr(cur)?'selected':''}>✓ Recebido em ${MESES[cur.getMonth()]}</option><option value="recebido" ${r.status==='recebido'?'selected':''}>🎉 Quitado — dívida encerrada</option></select></div>
      </div>
      <div class="field"><label>Observação</label><input id="r_obs" value="${r.observacao||''}" placeholder="Ex: 6x de 150, cartão tal..."></div>
    </div>
    <div class="mf"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveReceber('${r.id||''}')">Salvar</button></div>`);
 }
 async function saveReceber(id){
+  const statusSel=$('r_status').value;
   const data={
     descricao:$('r_desc').value.trim(),
     pessoa:$('r_pessoa').value.trim()||null,
@@ -1714,7 +1715,8 @@ async function saveReceber(id){
     valor:parseFloat($('r_valor').value)||0,
     valor_parcela:parseFloat($('r_parcela').value)||0,
     prazo:$('r_prazo').value||null,
-    status:$('r_status').value,
+    status:statusSel==='recebido'?'recebido':'pendente',
+    ultimo_mes_recebido:statusSel==='recebido_mes'?compStr(cur):null,
     observacao:$('r_obs').value.trim()||null
   };
   if(!data.descricao){toast('Informe a descrição');return;}
