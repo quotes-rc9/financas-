@@ -811,15 +811,17 @@ function renderProjecao(){
     return true;
   });
   let html='';
-  filtrados.forEach(({d,pagar,receber,saldo,isNow})=>{
+  filtrados.forEach(({d,comp,pagar,receber,saldo,isNow})=>{
+    const encerrado=state.mesesEncerrados.find(m=>m.competencia===comp);
     const pct=receber>0?Math.min(100,Math.round(pagar/receber*100)):100;
     const barColor=pct>90?'var(--red)':pct>70?'var(--yellow)':'var(--green)';
     const health=saldo>=0?'🟢':saldo>=-200?'🟡':'🔴';
-    const cls='cal'+(isNow?' now':'')+(saldo<0?' deficit':' superavit');
+    const cls='cal'+(isNow?' now':'')+(encerrado?' enc':'')+(saldo<0?' deficit':' superavit');
     html+=`<div class="${cls}" onclick="irMes('${d.getFullYear()}','${d.getMonth()}')">
       <div class="mes">${MESES[d.getMonth()]} ${d.getFullYear()}
         <div style="display:flex;align-items:center;gap:6px">
           ${isNow?'<span class="hoje">agora</span>':''}
+          ${encerrado?'<span class="hoje" style="background:var(--green);color:#000">✅ concluído</span>':''}
           <span class="health">${health}</span>
         </div>
       </div>
