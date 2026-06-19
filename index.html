@@ -530,7 +530,7 @@ let state={cartoes:[],lancamentos:[],areceber:[],emprestimos:[],planos:[],evento
 let cur=(()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),1);})(); // sempre inicia no mês atual
 const CACHE_KEY='fin_cache_v1';
 function saveCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify({t:Date.now(),s:state}));}catch(e){}}
-function loadCache(){try{const d=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(d&&Date.now()-d.t<3600000)return d.s;}catch(e){}return null;}
+function loadCache(){try{const d=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(d)return d.s;}catch(e){}return null;}
 let calMeses=12; // quantos meses mostrar no calendário
 
 const brl=v=>(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -554,7 +554,7 @@ async function loadAll(){
   if(c.error||l.error||r.error||e.error){
     $('statusDot').className='dot off';
     $('syncTxt').innerHTML='🔴 sem conexão';
-    return;
+    return false;
   }
   $('statusDot').className='dot';
   $('syncTxt').innerHTML='🟢 ao vivo';
@@ -573,6 +573,7 @@ async function loadAll(){
   }
   saveCache();
   render();
+  return true;
 }
 let planosOk=true, eventosOk=true;
 let _reconTimer=null, _rtChannel=null;
@@ -1840,8 +1841,22 @@ async function startApp(){
     setupRealtime();
   } else {
     $('loading').style.display='flex';
-    try{await loadAll();setupRealtime();$('loading').style.display='none';}
-    catch(err){$('loading').innerHTML='<div style="color:var(--red);text-align:center">Erro ao carregar.<br>'+err.message+'</div>';}
+    let _retries=0;
+    async function tryLoad(){
+      try{
+        const ok=await loadAll();
+        if(ok){setupRealtime();$('loading').style.display='none';}
+        else{
+          _retries++;
+          const msg=_retries<8?`Conectando... (${_retries}/8)`:'Sem conexão.';
+          $('loading').innerHTML=`<div style="text-align:center"><div class="spin" style="margin:0 auto 16px"></div><div style="color:var(--mut);margin-bottom:12px">${msg}</div><button onclick="location.reload()" style="padding:8px 18px;border-radius:8px;background:var(--acc);color:#fff;border:none;cursor:pointer;font-size:14px">Tentar novamente</button></div>`;
+          if(_retries<8) setTimeout(tryLoad,3000);
+        }
+      }catch(err){
+        $('loading').innerHTML=`<div style="color:var(--red);text-align:center">Erro ao carregar.<br>${err.message}<br><button onclick="location.reload()" style="margin-top:12px;padding:8px 18px;border-radius:8px;background:var(--acc);color:#fff;border:none;cursor:pointer;font-size:14px">Tentar novamente</button></div>`;
+      }
+    }
+    tryLoad();
   }
 }
 function showLogin(){
