@@ -173,6 +173,30 @@
   .ccard .acts button:hover{background:rgba(0,0,0,.45)}
   .ccard . util{height:6px;background:rgba(0,0,0,.25);border-radius:4px;overflow:hidden;margin-top:8px}
   .ccard .util .f{height:100%;background:rgba(255,255,255,.85)}
+  /* ---- Dívidas / compras parceladas ---- */
+  .divpanel{margin-bottom:14px;padding:0;overflow:hidden}
+  .divhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .divtitle{display:flex;align-items:center;gap:8px;font-size:15px}
+  .divtitle .d{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+  .divsum{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--mut);flex-wrap:wrap}
+  .divlist{display:flex;flex-direction:column}
+  .divrow{padding:12px 16px;border-bottom:1px solid var(--line)}
+  .divrow:last-child{border-bottom:none}
+  .divrow-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .divdesc{font-weight:700;font-size:14px}
+  .divmeta{font-size:12px;color:var(--mut);margin-top:3px}
+  .divacts{display:flex;gap:5px;flex-shrink:0;align-items:center}
+  .ico-btn.sm{width:30px;height:30px;font-size:13px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+  .tagok{background:var(--green);color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;vertical-align:middle;margin-left:4px}
+  .util.mini{height:6px;margin-top:9px;background:var(--line);border-radius:4px;overflow:hidden}
+  .util.mini .f{height:100%;background:linear-gradient(90deg,var(--green),var(--acc))}
+  .divcron{display:none;margin-top:10px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .divcron.show{display:block}
+  .pcell{display:grid;grid-template-columns:54px 1fr 90px 92px;gap:8px;padding:8px 10px;font-size:12px;border-bottom:1px solid var(--line);color:var(--mut);align-items:center}
+  .pcell:last-child{border-bottom:none}
+  .pcell.pg{color:var(--green)}
+  .pcell.nx{color:var(--txt);background:rgba(99,102,241,.10);font-weight:600}
+  @media(max-width:680px){.pcell{grid-template-columns:44px 1fr 74px;}.pcell span:nth-child(3){display:none}}
 
   /* MODAL */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);z-index:50;display:none;align-items:center;justify-content:center;padding:18px}
@@ -456,6 +480,13 @@
     </div>
     <div class="kpis" id="cartoesKpis"></div>
     <div class="cards-grid" id="cardsGrid"></div>
+
+    <div class="toolbar" style="margin-top:30px">
+      <h2 style="font-size:18px">📋 Dívidas &amp; compras parceladas</h2>
+      <button class="btn" onclick="openDivida()">＋ Adicionar dívida</button>
+    </div>
+    <p style="font-size:13px;color:var(--mut);margin:-6px 0 16px">Lance cada compra parcelada do cartão. O sistema soma o que falta pagar e mostra quanto você ainda deve e quanto tem de limite livre.</p>
+    <div id="dividasWrap"></div>
   </section>
 
   <!-- A RECEBER -->
@@ -526,7 +557,7 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const sb=supabase.createClient(SB_URL,SB_KEY);
 
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-let state={cartoes:[],lancamentos:[],areceber:[],emprestimos:[],planos:[],eventos:[],mesesEncerrados:[]};
+let state={cartoes:[],lancamentos:[],areceber:[],emprestimos:[],planos:[],eventos:[],dividas:[],mesesEncerrados:[]};
 let cur=(()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),1);})(); // sempre inicia no mês atual
 const CACHE_KEY='fin_cache_v1';
 function saveCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify({t:Date.now(),s:state}));}catch(e){}}
@@ -541,13 +572,14 @@ function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');set
 
 // ---------- DATA ----------
 async function loadAll(){
-  const [c,l,r,e,p,ev,mes]=await Promise.all([
+  const [c,l,r,e,p,ev,dv,mes]=await Promise.all([
     sb.from('fin_cartoes').select('*').order('ordem'),
     sb.from('fin_lancamentos').select('*').order('criado_em'),
     sb.from('fin_a_receber').select('*').order('criado_em'),
     sb.from('fin_emprestimos').select('*').order('criado_em'),
     sb.from('fin_planos').select('*').order('ordem'),
     sb.from('fin_eventos').select('*').order('data'),
+    sb.from('fin_cartao_dividas').select('*').order('criado_em'),
     sb.from('fin_meses_encerrados').select('*').order('competencia')
   ]);
   // se as tabelas principais falharem, não sobrescreve o estado com arrays vazios
@@ -561,8 +593,11 @@ async function loadAll(){
   state.cartoes=c.data||[]; state.lancamentos=l.data||[];
   state.areceber=r.data||[]; state.emprestimos=e.data||[]; state.planos=p.data||[];
   state.eventos=ev.data||[]; state.mesesEncerrados=mes.data||[];
+  state.dividas=dv.data||[];
   planosOk = !p.error;
   eventosOk = !ev.error;
+  const _divPrev=dividasOk; dividasOk = !dv.error;
+  if(dividasOk && !_divPrev && _rtChannel) setupRealtime(); // (re)liga realtime das dívidas quando a tabela passa a existir
   // se o mês que está sendo exibido é o mês atual do calendário E já está encerrado,
   // avança automaticamente para o próximo mês
   const hoje=new Date();
@@ -575,19 +610,20 @@ async function loadAll(){
   render();
   return true;
 }
-let planosOk=true, eventosOk=true;
+let planosOk=true, eventosOk=true, dividasOk=false;
 let _reconTimer=null, _rtChannel=null;
 function setupRealtime(){
   if(_rtChannel){try{sb.removeChannel(_rtChannel);}catch(e){} _rtChannel=null;}
-  _rtChannel=sb.channel('fin-all')
+  let ch=sb.channel('fin-all')
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_cartoes'},loadAll)
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_lancamentos'},loadAll)
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_a_receber'},loadAll)
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_emprestimos'},loadAll)
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_planos'},loadAll)
    .on('postgres_changes',{event:'*',schema:'public',table:'fin_eventos'},loadAll)
-   .on('postgres_changes',{event:'*',schema:'public',table:'fin_meses_encerrados'},loadAll)
-   .subscribe(s=>{
+   .on('postgres_changes',{event:'*',schema:'public',table:'fin_meses_encerrados'},loadAll);
+  if(dividasOk) ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'fin_cartao_dividas'},loadAll);
+  _rtChannel=ch.subscribe(s=>{
       if(s==='SUBSCRIBED'){
         clearTimeout(_reconTimer); _reconTimer=null;
       } else if(s==='CHANNEL_ERROR'||s==='TIMED_OUT'||s==='CLOSED'){
@@ -1163,17 +1199,38 @@ function renderHistorico(){
   }).join('');
 }
 
+// ---- Dívidas de cartão (compras parceladas) ----
+const dividasDoCartao=id=>state.dividas.filter(d=>d.cartao_id===id);
+const restanteDivida=d=>Math.max(0,(+d.num_parcelas||0)-(+d.parcelas_pagas||0))*(+d.valor_parcela||0);
+const totalDivida=d=>(+d.num_parcelas||0)*(+d.valor_parcela||0);
+function totalDevidoCartao(c){
+  const ds=dividasDoCartao(c.id);
+  if(ds.length) return ds.reduce((s,d)=>s+restanteDivida(d),0);
+  return +c.saldo_devedor||0; // sem dívidas detalhadas: usa o saldo manual
+}
+function parcelaData(d,i){ // i = número da parcela (1-based)
+  if(!d.data_primeira) return null;
+  const b=new Date(d.data_primeira+'T00:00:00');
+  return new Date(b.getFullYear(),b.getMonth()+(i-1),b.getDate());
+}
+function proximaParcela(d){
+  const pagas=+d.parcelas_pagas||0;
+  if(pagas>=(+d.num_parcelas||0)) return null;
+  return {n:pagas+1,data:parcelaData(d,pagas+1),valor:+d.valor_parcela||0};
+}
+const fmtD=dt=>dt?dt.toLocaleDateString('pt-BR'):'sem data';
+
 function renderCartoes(){
   const totLim=state.cartoes.reduce((s,c)=>s+ +c.limite,0);
-  const totDev=state.cartoes.reduce((s,c)=>s+ +c.saldo_devedor,0);
+  const totDev=state.cartoes.reduce((s,c)=>s+totalDevidoCartao(c),0);
   const totDisp=Math.max(0,totLim-totDev);
   $('cartoesKpis').innerHTML=`
     ${kpi('blue','💳','Limite total',brl(totLim),state.cartoes.length+' cartões')}
-    ${kpi('red','🧾','Fatura total',brl(totDev),'somando tudo')}
+    ${kpi('red','🧾','Devo no total',brl(totDev),'somando tudo')}
     ${kpi('green','✅','Disponível total',brl(totDisp),'limite livre')}`;
-  if(!state.cartoes.length){$('cardsGrid').innerHTML='<div class="empty" style="grid-column:1/-1"><div class="e">💳</div>Nenhum cartão cadastrado.</div>';return;}
+  if(!state.cartoes.length){$('cardsGrid').innerHTML='<div class="empty" style="grid-column:1/-1"><div class="e">💳</div>Nenhum cartão cadastrado.</div>';renderDividas();return;}
   $('cardsGrid').innerHTML=state.cartoes.map(c=>{
-    const lim=+c.limite, dev=+c.saldo_devedor;
+    const lim=+c.limite, dev=totalDevidoCartao(c);
     const util=lim>0?Math.min(100,dev/lim*100):0;
     const disp=Math.max(0,lim-dev);
     return `<div class="ccard" style="background:linear-gradient(135deg,${c.cor},${shade(c.cor,-35)})">
@@ -1184,11 +1241,128 @@ function renderCartoes(){
         <div class="dev-l">Limite</div>
         <div class="dev">${brl(lim)}</div>
         <div class="lim" style="display:flex;justify-content:space-between;margin-top:6px">
-          <span>Fatura: <b>${brl(dev)}</b></span><span>Disponível: <b>${brl(disp)}</b></span>
+          <span>Devo: <b>${brl(dev)}</b></span><span>Disponível: <b>${brl(disp)}</b></span>
         </div>
         ${lim>0?`<div class="util"><div class="f" style="width:${util}%"></div></div><div class="lim" style="margin-top:3px">${util.toFixed(0)}% usado</div>`:''}
       </div></div>`;
   }).join('');
+  renderDividas();
+}
+
+function renderDividas(){
+  const wrap=$('dividasWrap'); if(!wrap) return;
+  if(!dividasOk){
+    wrap.innerHTML=`<div class="panel" style="border:1px dashed var(--yellow)"><p style="margin:0;font-size:13px;color:var(--mut)">⚠️ Para usar o controle de dívidas parceladas é preciso criar a tabela <code>fin_cartao_dividas</code> no Supabase. O SQL já foi gerado — rode no <b>SQL Editor</b> e recarregue a página.</p></div>`;
+    return;
+  }
+  if(!state.cartoes.length){wrap.innerHTML='';return;}
+  wrap.innerHTML=state.cartoes.map(c=>{
+    const ds=dividasDoCartao(c.id).slice().sort((a,b)=>(a.data_primeira||'9999').localeCompare(b.data_primeira||'9999'));
+    const devido=ds.reduce((s,d)=>s+restanteDivida(d),0);
+    const disp=Math.max(0,(+c.limite)-totalDevidoCartao(c));
+    const linhas=ds.length?ds.map(d=>dividaRow(d)).join(''):`<div style="padding:16px;color:var(--mut);font-size:13px">Nenhuma dívida lançada neste cartão. Clique em <b>＋ Dívida</b> para adicionar uma compra parcelada.</div>`;
+    return `<div class="panel divpanel">
+      <div class="divhead">
+        <div class="divtitle"><span class="d" style="background:${c.cor}"></span><b>${c.nome}</b></div>
+        <div class="divsum">
+          <span>Em aberto: <b style="color:var(--red)">${brl(devido)}</b></span>
+          <span>Disponível: <b style="color:var(--green)">${brl(disp)}</b></span>
+          <button class="btn sm" onclick="openDivida('${c.id}')">＋ Dívida</button>
+        </div>
+      </div>
+      <div class="divlist">${linhas}</div>
+    </div>`;
+  }).join('');
+}
+
+function dividaRow(d){
+  const pagas=+d.parcelas_pagas||0, n=+d.num_parcelas||0, vp=+d.valor_parcela||0;
+  const prog=n>0?Math.round(pagas/n*100):0;
+  const prox=proximaParcela(d);
+  const quitada=pagas>=n;
+  const cron=Array.from({length:n},(_,i)=>{
+    const num=i+1, paga=num<=pagas, ehProx=prox&&prox.n===num, dt=parcelaData(d,num);
+    return `<div class="pcell ${paga?'pg':(ehProx?'nx':'')}"><span>${num}/${n}</span><span>${fmtD(dt)}</span><span>${brl(vp)}</span><span>${paga?'✅ pago':(ehProx?'⏳ próxima':'• a vencer')}</span></div>`;
+  }).join('');
+  return `<div class="divrow">
+    <div class="divrow-top">
+      <div>
+        <div class="divdesc">${d.descricao||'(sem descrição)'}${quitada?'<span class="tagok">QUITADA</span>':''}</div>
+        <div class="divmeta">${brl(vp)} × ${n}x = <b>${brl(vp*n)}</b> • pagas ${pagas}/${n}${prox?` • próxima: ${fmtD(prox.data)}`:''}</div>
+      </div>
+      <div class="divacts">
+        ${!quitada?`<button class="btn sm" title="Marcar próxima parcela como paga" onclick="pagarParcela('${d.id}')">✓ parcela</button>`:''}
+        ${pagas>0?`<button class="ico-btn sm" title="Desfazer última parcela" onclick="desfazerParcela('${d.id}')">↩</button>`:''}
+        <button class="ico-btn sm" title="Ver/ocultar parcelas" onclick="this.closest('.divrow').querySelector('.divcron').classList.toggle('show')">📅</button>
+        <button class="ico-btn sm" title="Editar" onclick='openDivida(null,${JSON.stringify(d)})'>✏️</button>
+        <button class="ico-btn sm" title="Excluir" onclick="delRow('fin_cartao_dividas','${d.id}')">🗑️</button>
+      </div>
+    </div>
+    <div class="util mini"><div class="f" style="width:${prog}%"></div></div>
+    <div class="divcron">${cron}</div>
+  </div>`;
+}
+
+function openDivida(cartaoId,d){
+  if(!dividasOk){toast('Crie a tabela fin_cartao_dividas no Supabase primeiro');return;}
+  if(!state.cartoes.length){toast('Cadastre um cartão primeiro');return;}
+  d=d||{};const isEdit=!!d.id;const cid=d.cartao_id||cartaoId||state.cartoes[0].id;
+  const opts=state.cartoes.map(c=>`<option value="${c.id}" ${cid===c.id?'selected':''}>${c.nome}</option>`).join('');
+  showModal(`
+   <div class="mh"><h3>${isEdit?'✏️ Editar':'＋ Nova'} dívida</h3><button class="ico-btn" onclick="closeModal()">✕</button></div>
+   <div class="mb">
+     <div class="field"><label>Cartão</label><select id="d_cartao">${opts}</select></div>
+     <div class="field"><label>Descrição</label><input id="d_desc" value="${d.descricao||''}" placeholder="Ex: Geladeira, Tênis, Mercado..."></div>
+     <div class="row2">
+       <div class="field"><label>Valor da parcela (R$)</label><input id="d_vp" type="number" step="0.01" value="${d.valor_parcela||''}" oninput="calcDivida()" placeholder="0,00"></div>
+       <div class="field"><label>Nº de parcelas</label><input id="d_np" type="number" min="1" value="${d.num_parcelas||1}" oninput="calcDivida()"></div>
+     </div>
+     <div class="row2">
+       <div class="field"><label>Parcelas já pagas</label><input id="d_pp" type="number" min="0" value="${d.parcelas_pagas||0}" oninput="calcDivida()"></div>
+       <div class="field"><label>Data da 1ª parcela</label><input id="d_dt" type="date" value="${d.data_primeira||''}" oninput="calcDivida()"></div>
+     </div>
+     <div class="field"><label>Observação (opcional)</label><input id="d_obs" value="${d.observacao||''}"></div>
+     <div id="d_preview" style="background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px;color:var(--mut)"></div>
+   </div>
+   <div class="mf"><button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="saveDivida('${d.id||''}')">Salvar</button></div>`);
+  calcDivida();
+}
+function calcDivida(){
+  const vp=parseFloat($('d_vp').value)||0, np=parseInt($('d_np').value)||0, pp=Math.min(parseInt($('d_pp').value)||0,np||0);
+  const dt=$('d_dt').value;
+  const total=vp*np, rest=Math.max(0,np-pp)*vp;
+  let fim='';
+  if(dt&&np>0){const b=new Date(dt+'T00:00:00');const f=new Date(b.getFullYear(),b.getMonth()+(np-1),b.getDate());fim=' • última parcela em '+f.toLocaleDateString('pt-BR');}
+  $('d_preview').innerHTML=`${np}x de <b style="color:var(--txt)">${brl(vp)}</b> = <b style="color:var(--txt)">${brl(total)}</b> • falta pagar <b style="color:var(--red)">${brl(rest)}</b>${fim}`;
+}
+async function saveDivida(id){
+  const np=parseInt($('d_np').value)||1;
+  const data={
+    cartao_id:$('d_cartao').value,
+    descricao:$('d_desc').value.trim(),
+    valor_parcela:parseFloat($('d_vp').value)||0,
+    num_parcelas:np,
+    parcelas_pagas:Math.min(parseInt($('d_pp').value)||0,np),
+    data_primeira:$('d_dt').value||null,
+    observacao:$('d_obs').value.trim()||null
+  };
+  if(!data.cartao_id){toast('Escolha o cartão');return;}
+  if(!data.descricao){toast('Informe a descrição');return;}
+  if(id){await sb.from('fin_cartao_dividas').update(data).eq('id',id);toast('Dívida atualizada');}
+  else{await sb.from('fin_cartao_dividas').insert(data);toast('Dívida adicionada');}
+  closeModal(); loadAll();
+}
+async function pagarParcela(id){
+  const d=state.dividas.find(x=>x.id===id); if(!d) return;
+  const pg=Math.min(+d.num_parcelas||0,(+d.parcelas_pagas||0)+1);
+  await sb.from('fin_cartao_dividas').update({parcelas_pagas:pg}).eq('id',id);
+  toast('Parcela registrada ✓'); loadAll();
+}
+async function desfazerParcela(id){
+  const d=state.dividas.find(x=>x.id===id); if(!d) return;
+  const pg=Math.max(0,(+d.parcelas_pagas||0)-1);
+  await sb.from('fin_cartao_dividas').update({parcelas_pagas:pg}).eq('id',id);
+  toast('Parcela desfeita'); loadAll();
 }
 
 function recebTotalParcelas(x){
