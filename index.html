@@ -644,6 +644,18 @@ function setupRealtime(){
    });
 }
 
+// ---------- HEARTBEAT (mantém a conexão "ao vivo" mesmo se o realtime cair) ----------
+let _hbTimer=null;
+function startHeartbeat(){
+  if(_hbTimer) return;
+  _hbTimer=setInterval(()=>{ if(!document.hidden) loadAll().catch(()=>{}); },15000);
+}
+// quando a internet volta, recarrega na hora e religa o realtime
+window.addEventListener('online', ()=>{ loadAll().catch(()=>{}); setupRealtime(); });
+window.addEventListener('offline', ()=>{ $('statusDot').className='dot off'; $('syncTxt').innerHTML='🔴 sem conexão'; });
+// quando a aba volta ao foco, re-sincroniza
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) loadAll().catch(()=>{}); });
+
 // ---------- HELPERS ----------
 const cartaoById=id=>state.cartoes.find(c=>c.id===id);
 function lancMes(){const cs=compStr(cur);return state.lancamentos.filter(l=>l.competencia===cs);}
