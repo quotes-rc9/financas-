@@ -2052,7 +2052,7 @@ async function startApp(){
     async function tryLoad(){
       try{
         const ok=await loadAll();
-        if(ok){setupRealtime();$('loading').style.display='none';}
+        if(ok){setupRealtime();startHeartbeat();$('loading').style.display='none';}
         else{
           _retries++;
           const msg=_retries<8?`Conectando... (${_retries}/8)`:'Sem conexão.';
