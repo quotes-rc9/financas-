@@ -1873,6 +1873,12 @@ function openLanc(l){
        <div class="field"><label>Cartão (opcional)</label><select id="f_cartao"><option value="">— nenhum —</option>${cartOpts}</select></div>
        <div class="field"><label>Status</label><select id="f_status"><option value="pendente" ${l.status!=='pago'?'selected':''}>Pendente</option><option value="pago" ${l.status==='pago'?'selected':''}>Pago</option></select></div>
      </div>
+     <div class="field"><label>Forma de pagamento</label>
+       <div class="seg">
+         <label><input type="radio" name="forma" value="salario" ${l.forma_pagamento!=='cartao'?'checked':''}><span>💰 Salário</span></label>
+         <label><input type="radio" name="forma" value="cartao" ${l.forma_pagamento==='cartao'?'checked':''}><span>💳 Cartão (BB)</span></label>
+       </div>
+     </div>
      <div class="row2">
        <div class="field"><label>Parcela atual</label><input id="f_pa" type="number" value="${l.parcela_atual||1}" min="1"></div>
        <div class="field"><label>Total de parcelas</label><input id="f_pt" type="number" value="${l.parcela_total||1}" min="1"></div>
