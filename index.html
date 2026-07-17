@@ -639,6 +639,9 @@ async function loadAll(){
   eventosOk = !ev.error;
   const _divPrev=dividasOk; dividasOk = !dv.error;
   if(dividasOk && !_divPrev && _rtChannel) setupRealtime(); // (re)liga realtime das dívidas quando a tabela passa a existir
+  const _cfgPrev=configOk; configOk = !cfg.error && !!(cfg.data&&cfg.data[0]);
+  if(configOk) state.config={saldo_contas:0,investimentos:0,dia_salario:8,...cfg.data[0]};
+  if(configOk && !_cfgPrev && _rtChannel) setupRealtime(); // (re)liga realtime da config quando a tabela passa a existir
   // se o mês que está sendo exibido é o mês atual do calendário E já está encerrado,
   // avança automaticamente para o próximo mês
   const hoje=new Date();
