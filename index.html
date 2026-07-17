@@ -868,9 +868,14 @@ function projetar(){
   return {meses,semConfig};
 }
 function mesAno(d){return `${MESES[d.getMonth()].slice(0,3)}/${String(d.getFullYear()).slice(2)}`;}
+// total de dívida por frente (cartão usa a mesma conta detalhada da aba Cartões, via totalDevidoCartao)
+function totalCartoesDivida(){return state.cartoes.reduce((s,c)=>s+totalDevidoCartao(c),0);}
+function totalEmprestimosDivida(){return state.emprestimos.reduce((s,e)=>s+Math.max(0,e.parcelas_total-e.parcelas_pagas)*+e.parcela_valor,0);}
+// financiamentos: soma 0 até existir uma tabela fin_financiamentos (mesmo padrão de fin_emprestimos)
+function totalDividasGeral(){return totalCartoesDivida()+totalEmprestimosDivida();}
+function patrimonioLiquido(){return (+state.config.saldo_contas||0)+(+state.config.investimentos||0)-totalDividasGeral();}
 function dividaTotalAtual(){
-  return state.cartoes.reduce((s,c)=>s+ +c.saldo_devedor,0)
-       + state.emprestimos.reduce((s,e)=>s+Math.max(0,e.parcelas_total-e.parcelas_pagas)*+e.parcela_valor,0);
+  return totalDividasGeral();
 }
 let _projFiltro='todos';
 function projFiltro(f){
