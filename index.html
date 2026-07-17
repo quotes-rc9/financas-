@@ -600,7 +600,7 @@ function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');set
 
 // ---------- DATA ----------
 async function loadAll(){
-  const [c,l,r,e,p,ev,dv,mes]=await Promise.all([
+  const [c,l,r,e,p,ev,dv,mes,cfg]=await Promise.all([
     sb.from('fin_cartoes').select('*').order('ordem'),
     sb.from('fin_lancamentos').select('*').order('criado_em'),
     sb.from('fin_a_receber').select('*').order('criado_em'),
@@ -608,7 +608,8 @@ async function loadAll(){
     sb.from('fin_planos').select('*').order('ordem'),
     sb.from('fin_eventos').select('*').order('data'),
     sb.from('fin_cartao_dividas').select('*').order('criado_em'),
-    sb.from('fin_meses_encerrados').select('*').order('competencia')
+    sb.from('fin_meses_encerrados').select('*').order('competencia'),
+    sb.from('fin_config').select('*').limit(1)
   ]);
   // se as tabelas principais falharem, não sobrescreve o estado com arrays vazios
   if(c.error||l.error||r.error||e.error){
