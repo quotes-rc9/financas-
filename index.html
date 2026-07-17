@@ -995,7 +995,7 @@ function loanForMonth(d){
   });
   return v;
 }
-function parcelaEmprestimoMes(){return state.emprestimos.reduce((s,e)=>s+(e.parcelas_pagas<e.parcelas_total?+e.parcela_valor:0),0);}
+function parcelaEmprestimoMes(){return state.emprestimos.reduce((s,e)=>s+(parcelasPagasCalc(e)<e.parcelas_total?+e.parcela_valor:0),0);}
 function irMes(y,m){cur=new Date(+y,+m,1);setTab('lanc');render();}
 function addExtra(y,m){cur=new Date(+y,+m,1);render();openLanc();}
 
