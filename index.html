@@ -1866,8 +1866,10 @@ async function ajustarPlano(id,atual,delta){await sb.from('fin_planos').update({
 function renderEmprestimos(){
   if(!state.emprestimos.length){$('empList').innerHTML='<div class="empty"><div class="e">🏦</div>Nenhum empréstimo cadastrado.</div>';return;}
   $('empList').innerHTML=state.emprestimos.map(e=>{
-    const restNum=Math.max(0,e.parcelas_total-e.parcelas_pagas);
-    const pct=e.parcelas_total>0?e.parcelas_pagas/e.parcelas_total*100:0;
+    const pagas=parcelasPagasCalc(e);
+    const auto=!!e.data_primeira_parcela;
+    const restNum=Math.max(0,e.parcelas_total-pagas);
+    const pct=e.parcelas_total>0?pagas/e.parcelas_total*100:0;
     const restante=restNum*+e.parcela_valor;
     // descontado todo dia 20 do salário
     const prox=proximoDia20();
@@ -1880,8 +1882,8 @@ function renderEmprestimos(){
       </div>
       <div class="progress-big"><div class="f" style="width:${pct}%">${pct.toFixed(0)}%</div></div>
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <div style="font-size:13px;color:var(--mut)">${e.parcelas_pagas} de ${e.parcelas_total} parcelas pagas ${quitado?'• <span style="color:var(--green)">✓ quitado!</span>':''}</div>
-        ${quitado?'':`<button class="btn sm" onclick="registrarParcela('${e.id}',${e.parcelas_pagas})">✓ Registrar parcela paga</button>`}
+        <div style="font-size:13px;color:var(--mut)">${pagas} de ${e.parcelas_total} parcelas pagas ${quitado?'• <span style="color:var(--green)">✓ quitado!</span>':''}</div>
+        ${quitado?'':auto?'<span class="tag" style="font-size:11px" title="Calculado automaticamente a partir da data da 1ª parcela — desconta sozinho todo mês">🔁 desconto automático</span>':`<button class="btn sm" onclick="registrarParcela('${e.id}',${pagas})">✓ Registrar parcela paga</button>`}
       </div>
       <div class="emp-grid">
         <div class="it"><div class="l">Liberado</div><div class="v" style="color:var(--green)">${brl(+e.valor_liberado)}</div></div>
