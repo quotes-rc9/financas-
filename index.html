@@ -875,7 +875,18 @@ function projetar(){
 function mesAno(d){return `${MESES[d.getMonth()].slice(0,3)}/${String(d.getFullYear()).slice(2)}`;}
 // total de dívida por frente (cartão usa a mesma conta detalhada da aba Cartões, via totalDevidoCartao)
 function totalCartoesDivida(){return state.cartoes.reduce((s,c)=>s+totalDevidoCartao(c),0);}
-function totalEmprestimosDivida(){return state.emprestimos.reduce((s,e)=>s+Math.max(0,e.parcelas_total-e.parcelas_pagas)*+e.parcela_valor,0);}
+// se o empréstimo tiver data da 1ª parcela, calcula sozinho quantas já foram descontadas do salário
+// (sem precisar clicar em "Registrar parcela paga" todo mês); senão usa o contador manual
+function parcelasPagasCalc(e){
+  if(!e.data_primeira_parcela) return +e.parcelas_pagas||0;
+  const ini=new Date(e.data_primeira_parcela+'T00:00:00');
+  const hoje=new Date();
+  let meses=(hoje.getFullYear()-ini.getFullYear())*12+(hoje.getMonth()-ini.getMonth());
+  const diaEsteMes=new Date(hoje.getFullYear(),hoje.getMonth(),ini.getDate());
+  if(hoje>=diaEsteMes) meses+=1;
+  return Math.min(Math.max(0,meses),+e.parcelas_total||0);
+}
+function totalEmprestimosDivida(){return state.emprestimos.reduce((s,e)=>s+Math.max(0,e.parcelas_total-parcelasPagasCalc(e))*+e.parcela_valor,0);}
 // financiamentos: soma 0 até existir uma tabela fin_financiamentos (mesmo padrão de fin_emprestimos)
 function totalDividasGeral(){return totalCartoesDivida()+totalEmprestimosDivida();}
 function patrimonioLiquido(){return (+state.config.saldo_contas||0)+(+state.config.investimentos||0)-totalDividasGeral();}
