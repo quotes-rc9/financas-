@@ -1097,8 +1097,37 @@ function renderDash(){
     </div>
   </div>`;
 }
-function kpi(cls,ico,lbl,val,sub){return `<div class="kpi ${cls}"><div class="bar-top"></div><div class="ico">${ico}</div>
+function kpi(cls,ico,lbl,val,sub,tip){return `<div class="kpi ${cls}"${tip?` title="${tip}"`:''}><div class="bar-top"></div><div class="ico">${ico}</div>
   <div class="lbl">${lbl}</div><div class="val">${val}</div><div class="sub">${sub}</div></div>`;}
+
+// componente reutilizável: resumo financeiro (Receita/Despesas/Saldo/Patrimônio/Dívidas/Cartões/Empréstimos/Dias p/ salário)
+function renderFinancialSummary(){
+  if(!$('finSummary')) return;
+  const head=`<h3><span class="t">💵 Resumo financeiro</span>
+      <button class="btn sm ghost" onclick="openConfigFinanceira()" title="Editar saldo em contas, investimentos e dia do salário">✏️ Editar dados</button>
+    </h3>`;
+  if(!configOk){
+    $('finSummary').innerHTML=head+`<div class="kpis">${Array(8).fill('<div class="kpi skeleton">&nbsp;</div>').join('')}</div>`;
+    return;
+  }
+  const {totDesp,totRec,saldo}=totaisMes(compStr(cur));
+  const totCartoes=totalCartoesDivida();
+  const totEmprestimos=totalEmprestimosDivida();
+  const totDividas=totalDividasGeral();
+  const patrimonio=patrimonioLiquido();
+  const dias=diasProximoSalario();
+  const diaSal=+state.config.dia_salario||8;
+  $('finSummary').innerHTML=head+`<div class="kpis">
+    ${kpi('green','💰','Receita do mês',brl(totRec),'lançamentos deste mês')}
+    ${kpi('red','💸','Despesas do mês',brl(totDesp),'lançamentos deste mês')}
+    ${kpi(saldo>=0?'green':'red','⚖️','Saldo disponível',brl(saldo),'receita − despesas','Receita do mês menos despesas do mês')}
+    ${kpi(patrimonio>=0?'green':'red','🏦','Patrimônio líquido',brl(patrimonio),'saldo + invest. − dívidas','Saldo em contas + investimentos − total de dívidas')}
+    ${kpi(totDividas>0?'yellow':'green','📉','Total das dívidas',brl(totDividas),totDividas>0?'cartões + empréstimos':'Nenhuma dívida 🎉')}
+    ${kpi('blue','💳','Total dos cartões',brl(totCartoes),state.cartoes.length+' cartão(ões)')}
+    ${kpi('blue','🏛️','Total dos empréstimos',brl(totEmprestimos),state.emprestimos.length+' empréstimo(s)')}
+    ${kpi(dias<=3?'yellow':'blue','📅','Dias p/ próximo salário',dias,'todo dia '+diaSal,'Baseado no dia do salário configurado (dia '+diaSal+')')}
+  </div>`;
+}
 
 let _lancFiltro='todos';
 function lancFiltro(f){
