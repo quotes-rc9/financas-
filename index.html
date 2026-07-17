@@ -987,7 +987,7 @@ function diasProximoSalario(){
 function loanForMonth(d){
   let v=0;
   state.emprestimos.forEach(e=>{
-    const rest=Math.max(0,e.parcelas_total-e.parcelas_pagas); if(rest<=0) return;
+    const rest=Math.max(0,e.parcelas_total-parcelasPagasCalc(e)); if(rest<=0) return;
     const prox=proximoDia20();
     const ini=new Date(prox.getFullYear(),prox.getMonth(),1);
     const fim=new Date(prox.getFullYear(),prox.getMonth()+rest-1,1);
