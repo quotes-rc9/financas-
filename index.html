@@ -961,7 +961,13 @@ function miniProj(meses){
     }).join('')+`</div>`;
 }
 // parcela total de empréstimos que cai num determinado mês (todo dia 20)
-function proximoDia20(){const h=new Date();const p=new Date(h.getFullYear(),h.getMonth(),20);if(h.getDate()>20)p.setMonth(p.getMonth()+1);return p;}
+function proximoDiaDoMes(dia){const h=new Date();const p=new Date(h.getFullYear(),h.getMonth(),dia);if(h.getDate()>dia)p.setMonth(p.getMonth()+1);return p;}
+function proximoDia20(){return proximoDiaDoMes(20);}
+function diasProximoSalario(){
+  const p=proximoDiaDoMes(+state.config.dia_salario||8);
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  return Math.round((p-hoje)/86400000);
+}
 function loanForMonth(d){
   let v=0;
   state.emprestimos.forEach(e=>{
